@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bills     Bill[]
+
+  @@map("users")
+}
+
+model BillStage {
+  id     String @id @default(cuid())
+  label  String
+  colour String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bills  Bill[]
+
+  @@map("bill_stages")
+}
+
+model Bill {
+  id              String    @id @default(cuid())
+  billReference   String    @map("bill_reference")
+  billDate        DateTime  @map("bill_date")
+  submittedAt     DateTime? @map("submitted_at")
+  approvedAt      DateTime? @map("approved_at")
+  onHoldAt        DateTime? @map("on_hold_at")
+  billStageId     String    @map("bill_stage_id")
+  assignedToId    String    @map("assigned_to_id")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  billStage       BillStage @relation(fields: [billStageId], references: [id])
+  assignedTo      User      @relation(fields: [assignedToId], references: [id])
+
+  @@map("bills")
+}
