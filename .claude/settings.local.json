@@ -1,11 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx prisma generate:*)",
-      "Bash(npx prisma:*)",
-      "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(chmod:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run test:unit:*)",
+      "Bash(npm run test:api:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx prisma generate:*)"
     ],
-    "deny": []
+    "deny": [],
+    "ask": []
   }
 }

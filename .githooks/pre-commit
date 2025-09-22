@@ -1,0 +1,17 @@
+#!/bin/sh
+# Pre-commit hook to enforce code coverage thresholds
+
+echo "Running code coverage check..."
+
+# Run tests with coverage
+npm run test -- --coverage --passWithNoTests
+
+# Check if tests passed
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed or coverage thresholds not met"
+    echo "Please fix failing tests or improve code coverage before committing"
+    exit 1
+fi
+
+echo "✅ All tests passed and coverage thresholds met"
+exit 0
