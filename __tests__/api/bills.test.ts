@@ -85,7 +85,7 @@ describe('/api/bills', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to fetch bills')
+      expect(data.error).toBe('Internal server error')
     })
   })
 
@@ -167,7 +167,7 @@ describe('/api/bills', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('Missing required fields: billReference, billDate')
+      expect(data.error).toBe('Bill reference is required')
     })
 
     it('should create bill without assignment when assignedToId is not provided', async () => {
@@ -247,7 +247,7 @@ describe('/api/bills', () => {
       const response = await POST(request)
       const data = await response.json()
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(404)
       expect(data.error).toBe('Draft stage not found')
     })
 
@@ -257,12 +257,6 @@ describe('/api/bills', () => {
         billDate: 'invalid-date'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
-
-      mockPrisma.bill.findUnique.mockResolvedValue(null)
-      mockPrisma.billStage.findFirst.mockResolvedValue(mockDraftStage)
-      mockPrisma.bill.create.mockRejectedValue(new Error('Invalid date'))
-
       const request = new NextRequest('http://localhost:3000/api/bills', {
         method: 'POST',
         body: JSON.stringify(requestBody)
@@ -271,8 +265,8 @@ describe('/api/bills', () => {
       const response = await POST(request)
       const data = await response.json()
 
-      expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to create bill')
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('Invalid date format')
     })
 
     it('should handle very long bill references', async () => {
@@ -282,12 +276,6 @@ describe('/api/bills', () => {
         billDate: '2024-01-01'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
-
-      mockPrisma.bill.findUnique.mockResolvedValue(null)
-      mockPrisma.billStage.findFirst.mockResolvedValue(mockDraftStage)
-      mockPrisma.bill.create.mockRejectedValue(new Error('Field too long'))
-
       const request = new NextRequest('http://localhost:3000/api/bills', {
         method: 'POST',
         body: JSON.stringify(requestBody)
@@ -296,8 +284,8 @@ describe('/api/bills', () => {
       const response = await POST(request)
       const data = await response.json()
 
-      expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to create bill')
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('Bill reference must be less than 100 characters')
     })
 
     it('should handle malformed JSON in request body', async () => {
@@ -310,7 +298,7 @@ describe('/api/bills', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to create bill')
+      expect(data.error).toBe('Internal server error')
     })
   })
 })

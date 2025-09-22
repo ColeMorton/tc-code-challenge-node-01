@@ -147,7 +147,7 @@ describe('Database Constraints and Error Scenarios Integration Tests', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toContain('required') // Should mention required field
+      expect(data.error).toContain('expected string, received undefined')
     })
 
     it('should handle invalid date formats in bill creation', async () => {
@@ -197,7 +197,7 @@ describe('Database Constraints and Error Scenarios Integration Tests', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('userId is required')
+      expect(data.error).toContain('expected string, received undefined')
     })
 
     it('should handle invalid bill stage for assignment', async () => {

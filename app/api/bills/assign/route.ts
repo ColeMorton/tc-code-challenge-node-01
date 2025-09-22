@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Bill, BillStage } from '@prisma/client'
+import { handleApiError, validateRequestBody, NotFoundError, ConflictError, ValidationError } from '@/lib/api-utils'
+import { AssignBillRequestSchema } from '@/lib/validations'
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { userId, billId } = body
-
-    // Validate required fields
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      )
-    }
+    const { userId, billId } = await validateRequestBody(
+      request,
+      AssignBillRequestSchema
+    )
 
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -21,10 +17,7 @@ export async function POST(request: Request) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('User not found')
     }
 
     // Count current bills assigned to this user
@@ -33,10 +26,7 @@ export async function POST(request: Request) {
     })
 
     if (currentBillCount >= 3) {
-      return NextResponse.json(
-        { error: 'User already has the maximum of 3 bills assigned' },
-        { status: 409 }
-      )
+      throw new ConflictError('User already has the maximum of 3 bills assigned')
     }
 
     // Get assignable stages (Draft and Submitted)
@@ -49,10 +39,7 @@ export async function POST(request: Request) {
     })
 
     if (assignableStages.length === 0) {
-      return NextResponse.json(
-        { error: 'No assignable stages found' },
-        { status: 500 }
-      )
+      throw new NotFoundError('No assignable stages found')
     }
 
     const assignableStageIds = assignableStages.map(stage => stage.id)
@@ -68,17 +55,11 @@ export async function POST(request: Request) {
       })
 
       if (!bill) {
-        return NextResponse.json(
-          { error: 'Bill not found' },
-          { status: 404 }
-        )
+        throw new NotFoundError('Bill not found')
       }
 
       if (!['Draft', 'Submitted'].includes(bill.billStage.label)) {
-        return NextResponse.json(
-          { error: 'Bill must be in Draft or Submitted stage to be assigned' },
-          { status: 400 }
-        )
+        throw new ValidationError('Bill must be in Draft or Submitted stage to be assigned')
       }
     } else {
       // Find an unassigned bill in Draft or Submitted stage
@@ -98,10 +79,7 @@ export async function POST(request: Request) {
       })
 
       if (unassignedBills.length === 0) {
-        return NextResponse.json(
-          { error: 'No unassigned bills in Draft or Submitted stage found' },
-          { status: 404 }
-        )
+        throw new NotFoundError('No unassigned bills in Draft or Submitted stage found')
       }
 
       bill = unassignedBills[0]
@@ -143,10 +121,6 @@ export async function POST(request: Request) {
       bill: updatedBill
     })
   } catch (error) {
-    console.error('Failed to assign bill:', error)
-    return NextResponse.json(
-      { error: 'Failed to assign bill' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

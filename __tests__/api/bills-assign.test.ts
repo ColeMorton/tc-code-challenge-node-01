@@ -357,7 +357,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('userId is required')
+      expect(data.error).toContain('expected string, received undefined')
     })
 
     it('should handle missing assignable stages', async () => {
@@ -379,7 +379,7 @@ describe('/api/bills/assign', () => {
       const response = await POST(request)
       const data = await response.json()
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(404)
       expect(data.error).toBe('No assignable stages found')
     })
 
@@ -404,7 +404,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to assign bill')
+      expect(data.error).toBe('Internal server error')
     })
 
     it('should handle submitted bills without submittedAt and set timestamp', async () => {

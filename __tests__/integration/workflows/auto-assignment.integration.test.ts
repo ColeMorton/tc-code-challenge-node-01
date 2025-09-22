@@ -302,7 +302,7 @@ describe('Auto-Assignment Workflow Integration Tests', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('userId is required')
+      expect(data.error).toContain('expected string, received undefined')
     })
   })
 

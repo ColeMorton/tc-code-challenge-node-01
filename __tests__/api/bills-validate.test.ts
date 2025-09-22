@@ -78,7 +78,7 @@ describe('/api/bills/validate', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('billReference parameter is required')
+      expect(data.error).toContain('expected string, received undefined')
     })
 
     it('should handle database errors', async () => {
@@ -91,7 +91,7 @@ describe('/api/bills/validate', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to validate bill reference')
+      expect(data.error).toBe('Internal server error')
     })
 
     it('should handle URL encoded bill references', async () => {

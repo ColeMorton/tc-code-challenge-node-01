@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError } from '@/lib/api-utils'
 
 export async function GET() {
   try {
@@ -8,13 +9,9 @@ export async function GET() {
         createdAt: 'desc'
       }
     })
-    
+
     return NextResponse.json(users)
   } catch (error) {
-    console.error('Failed to fetch users:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch users' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

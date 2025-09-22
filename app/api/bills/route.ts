@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, validateRequestBody, ConflictError, NotFoundError } from '@/lib/api-utils'
+import { CreateBillRequestSchema } from '@/lib/validations'
 
 export async function GET() {
   try {
@@ -27,26 +29,16 @@ export async function GET() {
 
     return NextResponse.json(bills)
   } catch (error) {
-    console.error('Failed to fetch bills:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch bills' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { billReference, billDate, assignedToId } = body
-
-    // Validate required fields (assignedToId is now optional)
-    if (!billReference || !billDate) {
-      return NextResponse.json(
-        { error: 'Missing required fields: billReference, billDate' },
-        { status: 400 }
-      )
-    }
+    const { billReference, billDate, assignedToId } = await validateRequestBody(
+      request,
+      CreateBillRequestSchema
+    )
 
     // Check if bill reference already exists
     const existingBill = await prisma.bill.findUnique({
@@ -54,10 +46,7 @@ export async function POST(request: Request) {
     })
 
     if (existingBill) {
-      return NextResponse.json(
-        { error: 'Bill reference already exists' },
-        { status: 409 }
-      )
+      throw new ConflictError('Bill reference already exists')
     }
 
     // Get the Draft stage ID
@@ -66,17 +55,14 @@ export async function POST(request: Request) {
     })
 
     if (!draftStage) {
-      return NextResponse.json(
-        { error: 'Draft stage not found' },
-        { status: 500 }
-      )
+      throw new NotFoundError('Draft stage not found')
     }
 
     // Create the bill
     const bill = await prisma.bill.create({
       data: {
         billReference,
-        billDate: new Date(billDate),
+        billDate,
         billStageId: draftStage.id,
         assignedToId: assignedToId || null
       },
@@ -100,10 +86,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(bill, { status: 201 })
   } catch (error) {
-    console.error('Failed to create bill:', error)
-    return NextResponse.json(
-      { error: 'Failed to create bill' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

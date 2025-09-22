@@ -130,7 +130,7 @@ describe('Users API Integration Tests', () => {
 
       expect(response.status).toBe(500)
       expect(data).toHaveProperty('error')
-      expect(data.error).toBe('Database connection failed')
+      expect(data.error).toBe('Internal server error')
 
       // Restore original method
       testPrisma.user.findMany = originalFindMany
