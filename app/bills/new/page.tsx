@@ -204,7 +204,7 @@ export default function NewBillPage() {
                 data-testid="bill-reference-input"
                 value={formData.billReference}
                 onChange={(e) => handleBillReferenceChange(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                   validation.billReference.isValid ? 'border-gray-300' : 'border-red-300'
                 }`}
                 placeholder="e.g., BILL-2024-001"
@@ -247,7 +247,7 @@ export default function NewBillPage() {
                 data-testid="assigned-to-select"
                 value={formData.assignedToId}
                 onChange={(e) => setFormData(prev => ({ ...prev, assignedToId: e.target.value }))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Leave unassigned</option>
                 {users.map((user) => (
