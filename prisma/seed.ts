@@ -38,14 +38,15 @@ const generateRandomBills = (count: number, userIds: string[], billStageIds: str
     const billReference = `BILL-${String(i + 1).padStart(4, '0')}`
     const randomStageIndex = Math.floor(Math.random() * billStageIds.length)
     const stageId = billStageIds[randomStageIndex]
-    const assignedToId = userIds[Math.floor(Math.random() * userIds.length)]
+    const stageName = billStageData[randomStageIndex].label
+    const assignedToId = ['Draft', 'Submitted'].includes(stageName)
+      ? null
+      : userIds[Math.floor(Math.random() * userIds.length)]
     
     // Generate stage-specific timestamps
     let submittedAt = null
     let approvedAt = null
     let onHoldAt = null
-    
-    const stageName = billStageData[randomStageIndex].label
     
     if (['Submitted', 'Approved', 'Paying', 'On Hold', 'Rejected', 'Paid'].includes(stageName)) {
       submittedAt = new Date(billDate.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000) // 0-7 days after bill date

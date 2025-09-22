@@ -8,7 +8,17 @@
       "Bash(npm run test:api:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm run:*)",
+      "Bash(git push:*)",
+      "Bash(ssh:*)",
+      "Bash(ssh-add:*)",
+      "Read(//Users/colemorton/.ssh/**)",
+      "Read(//Users/colemorton/**)",
+      "Bash(cat:*)",
+      "Bash(npm install)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx prisma db push)"
     ],
     "deny": [],
     "ask": []
