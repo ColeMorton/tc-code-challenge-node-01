@@ -202,11 +202,11 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
         // Set appropriate timestamps for each stage
         if (stageName === 'Submitted' && !timestamps.submittedAt) {
           updateData.submittedAt = new Date()
-          timestamps.submittedAt = updateData.submittedAt
+          timestamps.submittedAt = updateData.submittedAt as Date
         }
         if (stageName === 'Approved' && !timestamps.approvedAt) {
           updateData.approvedAt = new Date()
-          timestamps.approvedAt = updateData.approvedAt
+          timestamps.approvedAt = updateData.approvedAt as Date
         }
 
         await testPrisma.bill.update({

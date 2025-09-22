@@ -22,7 +22,7 @@ jest.mock('@/lib/prisma', () => ({
   }
 }))
 
-const mockPrisma = prisma as MockPrismaClient
+const mockPrisma = prisma as unknown as MockPrismaClient
 
 // Mock console.error to suppress expected error logs during testing
 const originalConsoleError = console.error
@@ -48,19 +48,23 @@ describe('/api/bills/assign', () => {
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
       const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft' },
-        { id: 'submitted-stage', label: 'Submitted' }
+        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       ]
       const mockBill = {
         id: 'bill1',
         billReference: 'BILL-001',
-        billStage: { label: 'Submitted' },
+        billDate: new Date('2024-01-01'),
+        billStageId: 'submitted-stage',
+        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
         submittedAt: new Date('2024-01-01') // Already has submittedAt
       }
       const mockUpdatedBill = {
         ...mockBill,
         assignedToId: 'user1',
         assignedTo: mockUser,
+        billDate: new Date('2024-01-01'),
+        billStageId: 'submitted-stage',
         billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       }
 
@@ -137,13 +141,15 @@ describe('/api/bills/assign', () => {
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
       const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft' },
-        { id: 'submitted-stage', label: 'Submitted' }
+        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       ]
       const mockBill = {
         id: 'bill1',
         billReference: 'BILL-001',
-        billStage: { label: 'Approved' } // Not assignable stage
+        billDate: new Date('2024-01-01'),
+        billStageId: 'approved-stage',
+        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' } // Not assignable stage
       }
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
@@ -171,13 +177,15 @@ describe('/api/bills/assign', () => {
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
       const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft' },
-        { id: 'submitted-stage', label: 'Submitted' }
+        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       ]
       const mockBill = {
         id: 'bill1',
         billReference: 'BILL-001',
-        billStage: { label: 'Draft' },
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
         submittedAt: null
       }
       const mockUpdatedBill = {
@@ -237,13 +245,15 @@ describe('/api/bills/assign', () => {
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
       const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft' },
-        { id: 'submitted-stage', label: 'Submitted' }
+        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       ]
       const mockBill = {
         id: 'bill1',
         billReference: 'BILL-001',
-        billStage: { label: 'Approved' } // Not assignable
+        billDate: new Date('2024-01-01'),
+        billStageId: 'approved-stage',
+        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' } // Not assignable
       }
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
@@ -269,10 +279,12 @@ describe('/api/bills/assign', () => {
       }
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockSubmittedStage = { id: 'submitted-stage', label: 'Submitted' }
+      const mockSubmittedStage = { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       const mockUnassignedBill = {
         id: 'unassigned-bill',
         billReference: 'BILL-002',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'submitted-stage',
         submittedAt: new Date('2024-01-01')
       }
       const mockUpdatedBill = {
@@ -403,19 +415,23 @@ describe('/api/bills/assign', () => {
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
       const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft' },
-        { id: 'submitted-stage', label: 'Submitted' }
+        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       ]
       const mockBill = {
         id: 'bill1',
         billReference: 'BILL-001',
-        billStage: { label: 'Submitted' },
+        billDate: new Date('2024-01-01'),
+        billStageId: 'submitted-stage',
+        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
         submittedAt: null // No submittedAt timestamp yet
       }
       const mockUpdatedBill = {
         ...mockBill,
         assignedToId: 'user1',
         assignedTo: mockUser,
+        billDate: new Date('2024-01-01'),
+        billStageId: 'submitted-stage',
         billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
       }
 
@@ -466,11 +482,13 @@ describe('/api/bills/assign', () => {
       }
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
       const mockUnassignedBill = {
         id: 'unassigned-bill',
         billReference: 'BILL-BOUNDARY',
-        billStage: { label: 'Draft' }
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
       }
       const mockUpdatedBill = {
         ...mockUnassignedBill,
@@ -506,7 +524,7 @@ describe('/api/bills/assign', () => {
       }
 
       const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
       mockPrisma.bill.count.mockResolvedValue(1)

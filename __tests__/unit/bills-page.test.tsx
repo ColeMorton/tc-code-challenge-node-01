@@ -10,7 +10,7 @@ jest.mock('next/link', () => {
 })
 
 // Mock fetch
-const mockFetch = jest.fn()
+const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>
 global.fetch = mockFetch
 
 const mockBills = [
@@ -58,11 +58,11 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
 
     render(<BillsPage />)
 
@@ -97,10 +97,10 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockRejectedValueOnce(new Error('Failed to fetch users'))
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
     render(<BillsPage />)
 
@@ -117,11 +117,11 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
 
     render(<BillsPage />)
 
@@ -138,11 +138,11 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
 
     render(<BillsPage />)
 
@@ -161,19 +161,19 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true })
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
 
     render(<BillsPage />)
 
@@ -200,15 +200,15 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ error: 'User has too many bills assigned' })
-      })
+      } as unknown as Response)
 
     render(<BillsPage />)
 
@@ -240,11 +240,11 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
 
     render(<BillsPage />)
 
@@ -262,11 +262,11 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => []
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
 
     render(<BillsPage />)
 
@@ -282,11 +282,11 @@ describe('BillsPage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockBills
-      })
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUsers
-      })
+      } as unknown as Response)
       .mockImplementation(() => new Promise(() => {})) // Never resolves assignment
 
     render(<BillsPage />)

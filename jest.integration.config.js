@@ -10,7 +10,7 @@ module.exports = {
       useESM: false,
     }],
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/__tests__/integration/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/__tests__/integration/setup.ts'],
   globalSetup: '<rootDir>/__tests__/integration/globalSetup.ts',
   globalTeardown: '<rootDir>/__tests__/integration/globalTeardown.ts',
   silent: true,

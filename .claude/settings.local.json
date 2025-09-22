@@ -20,7 +20,9 @@
       "Bash(npm install)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx prisma db push)",
       "WebSearch",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [],
     "ask": []

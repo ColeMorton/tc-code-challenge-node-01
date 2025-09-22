@@ -17,7 +17,7 @@ jest.mock('@/lib/prisma', () => ({
   }
 }))
 
-const mockPrisma = prisma as MockPrismaClient
+const mockPrisma = prisma as unknown as MockPrismaClient
 
 // Mock console.error to suppress expected error logs during testing
 const originalConsoleError = console.error
@@ -97,7 +97,7 @@ describe('/api/bills', () => {
         assignedToId: 'user1'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
       const mockCreatedBill = {
         id: 'new-bill-id',
         ...requestBody,
@@ -136,7 +136,7 @@ describe('/api/bills', () => {
         assignedToId: 'user1'
       }
 
-      const existingBill = { id: 'existing-id', billReference: 'BILL-DUPLICATE' }
+      const existingBill = { id: 'existing-id', billReference: 'BILL-DUPLICATE', billDate: new Date('2024-01-01'), billStageId: 'draft-stage' }
       mockPrisma.bill.findUnique.mockResolvedValue(existingBill)
 
       const request = new NextRequest('http://localhost:3000/api/bills', {
@@ -177,7 +177,7 @@ describe('/api/bills', () => {
         // No assignedToId
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
       const mockCreatedBill = {
         id: 'new-bill-id',
         ...requestBody,
@@ -257,7 +257,7 @@ describe('/api/bills', () => {
         billDate: 'invalid-date'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
 
       mockPrisma.bill.findUnique.mockResolvedValue(null)
       mockPrisma.billStage.findFirst.mockResolvedValue(mockDraftStage)
@@ -282,7 +282,7 @@ describe('/api/bills', () => {
         billDate: '2024-01-01'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
 
       mockPrisma.bill.findUnique.mockResolvedValue(null)
       mockPrisma.billStage.findFirst.mockResolvedValue(mockDraftStage)

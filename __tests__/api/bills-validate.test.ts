@@ -12,7 +12,7 @@ jest.mock('@/lib/prisma', () => ({
   }
 }))
 
-const mockPrisma = prisma as Pick<MockPrismaClient, 'bill'>
+const mockPrisma = prisma as unknown as Pick<MockPrismaClient, 'bill'>
 
 // Mock console.error to suppress expected error logs during testing
 const originalConsoleError = console.error
