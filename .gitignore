@@ -56,3 +56,4 @@ temp/
 .npm/
 .yarn/
 .pnp.*
+/.claude

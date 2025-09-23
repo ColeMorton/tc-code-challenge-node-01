@@ -90,13 +90,13 @@ npm run dev
 
 **Features:**
 - Runs on `http://localhost:3000`
-- Uses Turbopack for fast hot reloading
+- Fast hot reloading with Next.js development server
 - Automatic TypeScript compilation
 - Real-time file watching
 
 ### 2. Available Development Commands
 ```bash
-# Development server with Turbopack
+# Development server with Next.js
 npm run dev
 
 # Type checking
@@ -161,10 +161,10 @@ npm run build
 ```
 
 **Build Features:**
-- Uses Turbopack for optimized production builds
+- Optimized production builds with Next.js
 - Generates static assets and server-side functions
 - TypeScript compilation and optimization
-- Tailwind CSS purging for minimal bundle size
+- Tailwind CSS optimization for minimal bundle size
 
 ### 2. Start Production Server
 ```bash
@@ -292,8 +292,8 @@ const prisma = new PrismaClient({
 
 2. **Static Asset Optimization:**
 - Next.js automatic image optimization
-- Turbopack bundle optimization
-- Tailwind CSS purging
+- Next.js bundle optimization
+- Tailwind CSS optimization
 
 3. **Caching Strategy:**
 - Browser caching for static assets

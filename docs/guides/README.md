@@ -42,25 +42,11 @@ The project implements a **multi-layer testing approach** designed to provide co
 // jest.config.js - Multi-project setup
 module.exports = {
   projects: [
-    {
-      displayName: 'frontend',
-      testEnvironment: 'jsdom',           // React component testing
-      testMatch: ['**/__tests__/unit/**/*.(test|spec).(ts|tsx)']
-    },
-    {
-      displayName: 'api',
-      testEnvironment: 'node',            // API endpoint testing
-      testMatch: ['**/__tests__/api/**/*.(test|spec).(ts|tsx)']
-    }
+    './jest.frontend.config.js',
+    './jest.api.config.js'
   ],
-  coverageThreshold: {
-    global: {
-      statements: 85,    // High coverage standards
-      branches: 80,
-      functions: 85,
-      lines: 85
-    }
-  }
+  collectCoverage: true,
+  coverageReporters: ['text', 'lcov', 'clover', 'html']
 }
 ```
 
@@ -70,17 +56,38 @@ module.exports = {
 // playwright.config.ts
 export default defineConfig({
   testDir: './__tests__/e2e',
-  baseURL: 'http://localhost:3000',
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },  // CI only
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } }     // CI only
+  testIgnore: './__tests__/e2e/archived/**',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: [
+    ['html'],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['junit', { outputFile: 'test-results/results.xml' }]
   ],
   use: {
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'
-  }
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Additional browsers only for CI or explicit testing
+    ...(process.env.CI || process.env.CROSS_BROWSER ? [
+      { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+      { name: 'webkit', use: { ...devices['Desktop Safari'] } }
+    ] : [])
+  ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000
+  },
+  globalSetup: require.resolve('./__tests__/e2e/global-setup.ts'),
+  globalTeardown: require.resolve('./__tests__/e2e/global-teardown.ts')
 })
 ```
 
@@ -323,30 +330,13 @@ const BillsList = () => {
 
 ```typescript
 // next.config.ts
+import type { NextConfig } from "next";
+
 const nextConfig: NextConfig = {
-  // Turbopack for faster builds
-  experimental: {
-    turbopack: true
-  },
+  /* config options here */
+};
 
-  // Image optimization
-  images: {
-    formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60
-  },
-
-  // Bundle analysis
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        fs: false,
-        net: false,
-        tls: false
-      }
-    }
-    return config
-  }
-}
+export default nextConfig;
 ```
 
 ## Security Best Practices
