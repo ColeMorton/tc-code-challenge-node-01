@@ -360,6 +360,123 @@ describe('/api/bills/assign', () => {
       expect(data.error).toBe('Failed to assign bill')
     })
 
+    it('should retry on race condition and eventually succeed', async () => {
+      const requestBody = {
+        userId: 'user1',
+        billId: 'bill1'
+      }
+
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockAssignableStages = [
+        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
+      ]
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        submittedAt: null,
+        assignedToId: null
+      }
+      const mockUpdatedBill = {
+        ...mockBill,
+        assignedToId: 'user1',
+        assignedTo: mockUser,
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#9CA3AF' }
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
+
+      let callCount = 0
+      mockPrisma.bill.count.mockImplementation(async () => {
+        callCount++
+        if (callCount === 2) {
+          return 4
+        }
+        return 2
+      })
+
+      mockPrisma.$transaction = jest.fn().mockImplementation(async (callback) => {
+        const result = await callback(mockPrisma)
+        return result
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+        method: 'POST',
+        body: JSON.stringify(requestBody)
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.message).toBe('Bill assigned successfully')
+      expect(mockPrisma.bill.count.mock.calls.length).toBeGreaterThanOrEqual(4)
+    })
+
+    it('should fail after max retries when race condition persists', async () => {
+      const requestBody = {
+        userId: 'user1',
+        billId: 'bill1'
+      }
+
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockAssignableStages = [
+        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
+      ]
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        submittedAt: null,
+        assignedToId: null
+      }
+      const mockUpdatedBill = {
+        ...mockBill,
+        assignedToId: 'user1',
+        assignedTo: mockUser,
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#9CA3AF' }
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
+
+      let callCount = 0
+      mockPrisma.bill.count.mockImplementation(async () => {
+        callCount++
+        if (callCount % 2 === 0) {
+          return 4
+        }
+        return 2
+      })
+
+      mockPrisma.$transaction = jest.fn().mockImplementation(async (callback) => {
+        const result = await callback(mockPrisma)
+        return result
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+        method: 'POST',
+        body: JSON.stringify(requestBody)
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(503)
+      expect(data.error).toContain('concurrent updates')
+    })
+
     it('should handle submitted bills without submittedAt and set timestamp', async () => {
       const requestBody = {
         userId: 'user1',

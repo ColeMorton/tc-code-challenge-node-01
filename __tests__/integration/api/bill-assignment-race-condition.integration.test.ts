@@ -1,10 +1,10 @@
 import { POST as assignPOST } from '@/app/api/bills/assign/route'
-import { resetDatabase, testPrisma, getTestData, createTestBill, cleanupTestDatabase } from '../integration/testUtils'
+import { resetDatabase, testPrisma, getTestData, createTestBill, cleanupTestDatabase } from '../testUtils'
 import { NextRequest } from 'next/server'
 
 jest.mock('@/lib/prisma', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { testPrisma } = require('../integration/testUtils')
+  const { testPrisma } = require('../testUtils')
   return {
     prisma: testPrisma
   }
