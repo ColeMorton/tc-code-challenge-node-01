@@ -14,20 +14,19 @@ export const testPrisma = new PrismaClient({
  * This function clears all data and reseeds the database
  */
 export async function resetDatabase() {
-  // Clear all data in dependency order (bills first, then users, then stages)
+  // Only clear bills to reset test state
+  // Users and stages persist across tests for performance
   await testPrisma.bill.deleteMany()
-  await testPrisma.user.deleteMany()
-  await testPrisma.billStage.deleteMany()
 
-  // Reseed required data
+  // Ensure required data exists (idempotent)
   await seedRequiredData()
 }
 
 /**
- * Seed the database with required test data
+ * Seed the database with required test data (idempotent)
  */
 export async function seedRequiredData() {
-  // Create bill stages
+  // Create bill stages only if they don't exist
   const billStageData = [
     { label: 'Draft', colour: '#9CA3AF' },
     { label: 'Submitted', colour: '#3B82F6' },
@@ -38,11 +37,20 @@ export async function seedRequiredData() {
     { label: 'Paid', colour: '#059669' }
   ]
 
-  const createdStages = await testPrisma.billStage.createManyAndReturn({
-    data: billStageData
-  })
+  const stages = []
+  for (const stageData of billStageData) {
+    const existing = await testPrisma.billStage.findUnique({
+      where: { label: stageData.label }
+    })
+    if (!existing) {
+      const created = await testPrisma.billStage.create({ data: stageData })
+      stages.push(created)
+    } else {
+      stages.push(existing)
+    }
+  }
 
-  // Create test users
+  // Create test users only if they don't exist
   const userData = [
     { name: 'Test User 1', email: 'test1@example.com' },
     { name: 'Test User 2', email: 'test2@example.com' },
@@ -51,13 +59,22 @@ export async function seedRequiredData() {
     { name: 'Test User 5', email: 'test5@example.com' }
   ]
 
-  const createdUsers = await testPrisma.user.createManyAndReturn({
-    data: userData
-  })
+  const users = []
+  for (const user of userData) {
+    const existing = await testPrisma.user.findUnique({
+      where: { email: user.email }
+    })
+    if (!existing) {
+      const created = await testPrisma.user.create({ data: user })
+      users.push(created)
+    } else {
+      users.push(existing)
+    }
+  }
 
   return {
-    stages: createdStages,
-    users: createdUsers
+    stages,
+    users
   }
 }
 

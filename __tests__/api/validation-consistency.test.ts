@@ -13,57 +13,58 @@ describe('Frontend-Backend Validation Consistency', () => {
       // - billDate required
       // - assignedToId optional
 
-      // Backend validation (from bills/route.ts):
+      // Server Action validation (from bills/actions.ts):
       // - billReference required
       // - billDate required
       // - assignedToId optional (defaults to null)
 
       const frontendRequiredFields = ['billReference', 'billDate']
-      const backendRequiredFields = ['billReference', 'billDate'] // from API validation
+      const serverActionRequiredFields = ['billReference', 'billDate'] // from createBill action
       const frontendOptionalFields = ['assignedToId']
-      const backendOptionalFields = ['assignedToId']
+      const serverActionOptionalFields = ['assignedToId']
 
-      expect(frontendRequiredFields).toEqual(backendRequiredFields)
-      expect(frontendOptionalFields).toEqual(backendOptionalFields)
+      expect(frontendRequiredFields).toEqual(serverActionRequiredFields)
+      expect(frontendOptionalFields).toEqual(serverActionOptionalFields)
     })
 
     it('should have consistent bill reference validation', () => {
-      // Frontend: Uses /api/bills/validate endpoint for real-time validation
-      // Backend: Uses unique constraint and findUnique check
+      // Frontend: Uses validateBillReference Server Action for real-time validation
+      // Server: Uses unique constraint and findUnique check
       // Both should reject duplicate references
 
       const validationApproach = {
-        frontend: 'Real-time API validation with debouncing',
-        backend: 'Database uniqueness constraint + explicit check'
+        frontend: 'Real-time Server Action validation with debouncing',
+        server: 'Database uniqueness constraint + explicit check'
       }
 
       expect(validationApproach.frontend).toBeDefined()
-      expect(validationApproach.backend).toBeDefined()
+      expect(validationApproach.server).toBeDefined()
 
       // Both approaches ensure uniqueness - consistency verified
     })
 
     it('should have consistent error message structure', () => {
-      // Frontend error handling: Displays data.error from API response
-      // Backend error responses: Returns { error: string } in JSON
+      // Frontend error handling: Catches exceptions from Server Actions
+      // Server Actions: Throw errors with meaningful messages
 
-      const frontendErrorStructure = { error: 'string' }
-      const backendErrorStructure = { error: 'string' }
+      const frontendErrorHandling = 'try/catch with error.message'
+      const serverActionErrorHandling = 'throw new Error(message)'
 
-      expect(frontendErrorStructure).toEqual(backendErrorStructure)
+      expect(frontendErrorHandling).toBeDefined()
+      expect(serverActionErrorHandling).toBeDefined()
     })
 
     it('should have consistent optional assignment behavior', () => {
-      // Frontend: assignedToId can be empty string (converted to null in backend)
-      // Backend: assignedToId defaults to null if not provided
+      // Frontend: assignedToId can be empty string (converted to undefined for Server Action)
+      // Server Action: assignedToId defaults to null if not provided
 
       const frontendEmptyAssignment = ''
-      const backendNullAssignment = null
+      const serverActionNullAssignment = null
 
-      // Empty string from frontend should map to null in backend
-      const normalizedAssignment = frontendEmptyAssignment || null
+      // Empty string from frontend should map to undefined, then null in server action
+      const normalizedAssignment = frontendEmptyAssignment || undefined
 
-      expect(normalizedAssignment).toBe(backendNullAssignment)
+      expect(normalizedAssignment || null).toBe(serverActionNullAssignment)
     })
   })
 
@@ -89,19 +90,19 @@ describe('Frontend-Backend Validation Consistency', () => {
     })
   })
 
-  describe('API Response Consistency', () => {
+  describe('Server Action Response Consistency', () => {
     it('should have consistent success response structure', () => {
-      // All APIs return JSON with consistent structure
+      // Server Actions return objects directly
       const expectedStructures = {
         createBill: {
           billReference: 'string',
-          billDate: 'string',
-          assignedTo: 'object|null',
-          billStage: 'object'
+          billDate: 'Date',
+          assignedToId: 'string|null',
+          billStageId: 'string'
         },
         validateBill: {
-          exists: 'boolean',
-          isValid: 'boolean'
+          isValid: 'boolean',
+          message: 'string|undefined'
         },
         assignBill: {
           message: 'string',
@@ -114,22 +115,21 @@ describe('Frontend-Backend Validation Consistency', () => {
       expect(expectedStructures.assignBill).toBeDefined()
     })
 
-    it('should have consistent error response structure', () => {
-      // All APIs return errors in same format: { error: string }
-      const errorFormat = { error: 'string' }
+    it('should have consistent error handling', () => {
+      // Server Actions throw errors that are caught in try/catch
+      const errorHandling = 'throw new Error(message)'
 
-      expect(errorFormat.error).toBe('string')
+      expect(errorHandling).toBe('throw new Error(message)')
     })
 
-    it('should have consistent HTTP status codes', () => {
+    it('should have consistent HTTP status codes for API routes', () => {
       const statusCodes = {
-        success: [200, 201],
+        success: [200],
         clientError: [400, 404, 409],
         serverError: [500]
       }
 
       expect(statusCodes.success).toContain(200) // GET requests
-      expect(statusCodes.success).toContain(201) // POST create
       expect(statusCodes.clientError).toContain(400) // Bad request
       expect(statusCodes.clientError).toContain(404) // Not found
       expect(statusCodes.clientError).toContain(409) // Conflict (duplicate)

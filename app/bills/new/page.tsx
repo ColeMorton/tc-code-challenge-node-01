@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createBill, validateBillReference } from '@/app/bills/actions'
 
 interface User {
   id: string
@@ -26,6 +27,7 @@ interface ValidationState {
 
 export default function NewBillPage() {
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const [users, setUsers] = useState<User[]>([])
   const [formData, setFormData] = useState<FormData>({
     billReference: '',
@@ -39,7 +41,6 @@ export default function NewBillPage() {
       message: ''
     }
   })
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
@@ -57,7 +58,7 @@ export default function NewBillPage() {
     }
   }
 
-  const validateBillReference = async (billReference: string) => {
+  const handleValidateBillReference = async (billReference: string) => {
     if (!billReference.trim()) {
       setValidation(prev => ({
         ...prev,
@@ -80,15 +81,14 @@ export default function NewBillPage() {
     }))
 
     try {
-      const response = await fetch(`/api/bills/validate?billReference=${encodeURIComponent(billReference)}`)
-      const data = await response.json()
+      const result = await validateBillReference(billReference)
 
       setValidation(prev => ({
         ...prev,
         billReference: {
-          isValid: data.isValid,
+          isValid: result.isValid,
           isChecking: false,
-          message: data.isValid ? 'Available' : 'Bill reference already exists'
+          message: result.message || ''
         }
       }))
     } catch {
@@ -106,9 +106,8 @@ export default function NewBillPage() {
   const handleBillReferenceChange = (value: string) => {
     setFormData(prev => ({ ...prev, billReference: value }))
 
-    // Debounce validation
     const timeoutId = setTimeout(() => {
-      validateBillReference(value)
+      handleValidateBillReference(value)
     }, 500)
 
     return () => clearTimeout(timeoutId)
@@ -116,54 +115,39 @@ export default function NewBillPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
     setError(null)
 
-    // Validate form
     if (!formData.billReference.trim()) {
       setError('Bill reference is required')
-      setIsSubmitting(false)
       return
     }
 
     if (!formData.billDate) {
       setError('Bill date is required')
-      setIsSubmitting(false)
       return
     }
-
-    // assignedToId is now optional - bills can be created unassigned
 
     if (!validation.billReference.isValid) {
       setError('Please fix the bill reference error')
-      setIsSubmitting(false)
       return
     }
 
-    try {
-      const response = await fetch('/api/bills', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      })
+    startTransition(async () => {
+      try {
+        await createBill({
+          billReference: formData.billReference,
+          billDate: formData.billDate,
+          assignedToId: formData.assignedToId || undefined
+        })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create bill')
+        setSuccess(true)
+        setTimeout(() => {
+          router.push('/bills')
+        }, 2000)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
       }
-
-      setSuccess(true)
-      setTimeout(() => {
-        router.push('/bills')
-      }, 2000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setIsSubmitting(false)
-    }
+    })
   }
 
   if (success) {
@@ -262,10 +246,10 @@ export default function NewBillPage() {
               <button
                 type="submit"
                 data-testid="submit-button"
-                disabled={isSubmitting || !validation.billReference.isValid || validation.billReference.isChecking}
+                disabled={isPending || !validation.billReference.isValid || validation.billReference.isChecking}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                {isSubmitting ? 'Creating...' : 'Create Bill'}
+                {isPending ? 'Creating...' : 'Create Bill'}
               </button>
 
               <Link

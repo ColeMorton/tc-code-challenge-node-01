@@ -1,5 +1,5 @@
-import { GET, POST } from '@/app/api/bills/route'
-import { GET as validateGET } from '@/app/api/bills/validate/route'
+import { GET } from '@/app/api/bills/route'
+import { createBill, validateBillReference } from '@/app/bills/actions'
 import { POST as assignPOST } from '@/app/api/bills/assign/route'
 import { resetDatabase, testPrisma, getTestData, createTestBill, cleanupTestDatabase } from '../testUtils'
 import { NextRequest } from 'next/server'
@@ -30,6 +30,11 @@ jest.mock('@/lib/prisma', () => {
   }
 })
 
+// Mock Next.js revalidatePath
+jest.mock('next/cache', () => ({
+  revalidatePath: jest.fn()
+}))
+
 afterAll(async () => {
   await cleanupTestDatabase()
 })
@@ -39,7 +44,7 @@ describe('Bills API Integration Tests (Direct Route Testing)', () => {
     await resetDatabase()
   })
 
-  describe('POST /api/bills - Bill Creation Integration', () => {
+  describe('Server Action - Bill Creation Integration', () => {
     it('should create a bill and persist to database', async () => {
       const { users } = await getTestData()
       const testUser = users[0]
@@ -50,18 +55,10 @@ describe('Bills API Integration Tests (Direct Route Testing)', () => {
         assignedToId: testUser.id
       }
 
-      const request = new NextRequest('http://localhost:3000/api/bills', {
-        method: 'POST',
-        body: JSON.stringify(billData)
-      })
+      const bill = await createBill(billData)
 
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(201)
-      expect(data.billReference).toBe(billData.billReference)
-      expect(data.assignedTo.id).toBe(testUser.id)
-      expect(data.billStage.label).toBe('Draft')
+      expect(bill.billReference).toBe(billData.billReference)
+      expect(bill.assignedToId).toBe(testUser.id)
 
       // Verify database persistence
       const billInDb = await testPrisma.bill.findUnique({
@@ -87,16 +84,7 @@ describe('Bills API Integration Tests (Direct Route Testing)', () => {
         assignedToId: users[1].id
       }
 
-      const request = new NextRequest('http://localhost:3000/api/bills', {
-        method: 'POST',
-        body: JSON.stringify(billData)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(409)
-      expect(data.error).toBe('Bill reference already exists')
+      await expect(createBill(billData)).rejects.toThrow('Bill reference already exists')
 
       // Verify only one bill exists in database
       const billsCount = await testPrisma.bill.count({
@@ -109,19 +97,11 @@ describe('Bills API Integration Tests (Direct Route Testing)', () => {
       const billData = {
         billReference: 'UNASSIGNED-BILL-001',
         billDate: '2024-01-01'
-        // No assignedToId
       }
 
-      const request = new NextRequest('http://localhost:3000/api/bills', {
-        method: 'POST',
-        body: JSON.stringify(billData)
-      })
+      const bill = await createBill(billData)
 
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(201)
-      expect(data.assignedTo).toBeNull()
+      expect(bill.assignedToId).toBeNull()
 
       // Verify in database
       const billInDb = await testPrisma.bill.findUnique({
@@ -351,25 +331,19 @@ describe('Bills API Integration Tests (Direct Route Testing)', () => {
       await createTestBill('EXISTING-REF', 'Draft')
 
       // Test existing reference
-      const existingRequest = new NextRequest('http://localhost:3000/api/bills/validate?billReference=EXISTING-REF')
-      const existingResponse = await validateGET(existingRequest)
-      const existingData = await existingResponse.json()
+      const existingData = await validateBillReference('EXISTING-REF')
 
-      expect(existingResponse.status).toBe(200)
       expect(existingData).toEqual({
-        exists: true,
-        isValid: false
+        isValid: false,
+        message: 'Bill reference already exists'
       })
 
       // Test new reference
-      const newRequest = new NextRequest('http://localhost:3000/api/bills/validate?billReference=NEW-REF')
-      const newResponse = await validateGET(newRequest)
-      const newData = await newResponse.json()
+      const newData = await validateBillReference('NEW-REF')
 
-      expect(newResponse.status).toBe(200)
       expect(newData).toEqual({
-        exists: false,
-        isValid: true
+        isValid: true,
+        message: 'Available'
       })
     })
   })

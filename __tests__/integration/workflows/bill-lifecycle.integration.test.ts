@@ -1,6 +1,6 @@
-import { GET, POST } from '@/app/api/bills/route'
+import { GET } from '@/app/api/bills/route'
+import { createBill, validateBillReference } from '@/app/bills/actions'
 import { POST as assignPOST } from '@/app/api/bills/assign/route'
-import { GET as validateGET } from '@/app/api/bills/validate/route'
 import { resetDatabase, testPrisma, getTestData, createTestBill, cleanupTestDatabase } from '../testUtils'
 import { NextRequest } from 'next/server'
 
@@ -29,6 +29,11 @@ jest.mock('@/lib/prisma', () => {
   }
 })
 
+// Mock Next.js revalidatePath
+jest.mock('next/cache', () => ({
+  revalidatePath: jest.fn()
+}))
+
 afterAll(async () => {
   await cleanupTestDatabase()
 })
@@ -44,13 +49,10 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
       const user = users[0]
 
       // Step 1: Validate bill reference is available
-      const validateRequest = new NextRequest('http://localhost:3000/api/bills/validate?billReference=WORKFLOW-001')
-      const validateResponse = await validateGET(validateRequest)
-      const validateData = await validateResponse.json()
+      const validateData = await validateBillReference('WORKFLOW-001')
 
-      expect(validateResponse.status).toBe(200)
-      expect(validateData.exists).toBe(false)
       expect(validateData.isValid).toBe(true)
+      expect(validateData.message).toBe('Available')
 
       // Step 2: Create new bill
       const billData = {
@@ -59,18 +61,10 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
         assignedToId: user.id
       }
 
-      const createRequest = new NextRequest('http://localhost:3000/api/bills', {
-        method: 'POST',
-        body: JSON.stringify(billData)
-      })
+      const createdBill = await createBill(billData)
 
-      const createResponse = await POST(createRequest)
-      const createdBill = await createResponse.json()
-
-      expect(createResponse.status).toBe(201)
       expect(createdBill.billReference).toBe('WORKFLOW-001')
-      expect(createdBill.assignedTo.id).toBe(user.id)
-      expect(createdBill.billStage.label).toBe('Draft')
+      expect(createdBill.assignedToId).toBe(user.id)
 
       // Step 3: Verify bill appears in bills list
       const listResponse = await GET()
@@ -82,13 +76,10 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
       expect(ourBill.assignedTo.id).toBe(user.id)
 
       // Step 4: Verify bill reference is no longer available
-      const revalidateRequest = new NextRequest('http://localhost:3000/api/bills/validate?billReference=WORKFLOW-001')
-      const revalidateResponse = await validateGET(revalidateRequest)
-      const revalidateData = await revalidateResponse.json()
+      const revalidateData = await validateBillReference('WORKFLOW-001')
 
-      expect(revalidateResponse.status).toBe(200)
-      expect(revalidateData.exists).toBe(true)
       expect(revalidateData.isValid).toBe(false)
+      expect(revalidateData.message).toBe('Bill reference already exists')
     })
 
     it('should handle bill creation with auto-assignment workflow', async () => {
@@ -102,17 +93,16 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
         // No assignedToId - creating unassigned bill
       }
 
-      const createRequest = new NextRequest('http://localhost:3000/api/bills', {
-        method: 'POST',
-        body: JSON.stringify(billData)
+      const createdBill = await createBill(billData)
+
+      expect(createdBill.assignedToId).toBeNull()
+
+      // Verify bill stage is Draft by fetching from database
+      const billFromDb = await testPrisma.bill.findUnique({
+        where: { id: createdBill.id },
+        include: { billStage: true }
       })
-
-      const createResponse = await POST(createRequest)
-      const createdBill = await createResponse.json()
-
-      expect(createResponse.status).toBe(201)
-      expect(createdBill.assignedTo).toBeNull()
-      expect(createdBill.billStage.label).toBe('Draft')
+      expect(billFromDb!.billStage.label).toBe('Draft')
 
       // Step 2: Auto-assign the bill
       const assignRequest = new NextRequest('http://localhost:3000/api/bills/assign', {
@@ -358,13 +348,7 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
         assignedToId: user.id
       }
 
-      const createRequest1 = new NextRequest('http://localhost:3000/api/bills', {
-        method: 'POST',
-        body: JSON.stringify(billData1)
-      })
-
-      const createResponse1 = await POST(createRequest1)
-      expect(createResponse1.status).toBe(201)
+      await createBill(billData1)
 
       // Try to create second bill with same reference
       const billData2 = {
@@ -373,16 +357,7 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
         assignedToId: user.id
       }
 
-      const createRequest2 = new NextRequest('http://localhost:3000/api/bills', {
-        method: 'POST',
-        body: JSON.stringify(billData2)
-      })
-
-      const createResponse2 = await POST(createRequest2)
-      const createData2 = await createResponse2.json()
-
-      expect(createResponse2.status).toBe(409)
-      expect(createData2.error).toBe('Bill reference already exists')
+      await expect(createBill(billData2)).rejects.toThrow('Bill reference already exists')
 
       // Verify only one bill exists
       const billCount = await testPrisma.bill.count({
@@ -456,18 +431,13 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
           assignedToId: user.id
         }
 
-        return POST(new NextRequest('http://localhost:3000/api/bills', {
-          method: 'POST',
-          body: JSON.stringify(billData)
-        }))
+        return createBill(billData)
       })
 
-      const createResponses = await Promise.all(createPromises)
+      const createdBills = await Promise.all(createPromises)
 
       // Verify all bills created successfully
-      createResponses.forEach(response => {
-        expect(response.status).toBe(201)
-      })
+      expect(createdBills.length).toBe(3)
 
       // Verify all bills exist in database
       const allBills = await testPrisma.bill.findMany({

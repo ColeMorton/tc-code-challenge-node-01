@@ -56,4 +56,6 @@ temp/
 .npm/
 .yarn/
 .pnp.*
-/.claude
+
+# Claude Code configuration (local settings)
+.claude/
