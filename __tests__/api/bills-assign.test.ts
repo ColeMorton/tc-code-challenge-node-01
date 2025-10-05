@@ -14,11 +14,13 @@ jest.mock('@/lib/prisma', () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     billStage: {
       findFirst: jest.fn(),
       findMany: jest.fn(),
-    }
+    },
+    $transaction: jest.fn(),
   }
 }))
 
@@ -32,6 +34,11 @@ describe('/api/bills/assign', () => {
     jest.clearAllMocks()
     // Mock console.error to suppress expected error logs during testing
     console.error = jest.fn()
+
+    // Mock $transaction to execute the callback with the same mocked prisma client
+    mockPrisma.$transaction = jest.fn().mockImplementation(async (callback) => {
+      return callback(mockPrisma)
+    })
   })
 
   afterEach(() => {
@@ -285,7 +292,8 @@ describe('/api/bills/assign', () => {
         billReference: 'BILL-002',
         billDate: new Date('2024-01-01'),
         billStageId: 'submitted-stage',
-        submittedAt: new Date('2024-01-01')
+        submittedAt: new Date('2024-01-01'),
+        billStage: mockSubmittedStage
       }
       const mockUpdatedBill = {
         ...mockUnassignedBill,
@@ -298,7 +306,8 @@ describe('/api/bills/assign', () => {
       mockPrisma.bill.count.mockResolvedValue(1)
       mockPrisma.billStage.findMany.mockResolvedValue([mockSubmittedStage])
       mockPrisma.bill.findMany.mockResolvedValue([mockUnassignedBill])
-      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
+      mockPrisma.bill.updateMany.mockResolvedValue({ count: 1 })
+      mockPrisma.bill.findUnique.mockResolvedValue(mockUpdatedBill)
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
@@ -313,12 +322,12 @@ describe('/api/bills/assign', () => {
       expect(mockPrisma.bill.findMany).toHaveBeenCalledWith({
         where: {
           billStageId: { in: ['submitted-stage'] },
-          assignedToId: undefined
+          assignedToId: null
         },
         include: {
           billStage: true
         },
-        take: 1,
+        take: 5,
         orderBy: [
           { submittedAt: 'asc' },
           { createdAt: 'asc' }
@@ -501,7 +510,8 @@ describe('/api/bills/assign', () => {
       mockPrisma.bill.count.mockResolvedValue(2) // User has exactly 2 bills
       mockPrisma.billStage.findMany.mockResolvedValue([mockDraftStage])
       mockPrisma.bill.findMany.mockResolvedValue([mockUnassignedBill])
-      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
+      mockPrisma.bill.updateMany.mockResolvedValue({ count: 1 })
+      mockPrisma.bill.findUnique.mockResolvedValue(mockUpdatedBill)
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
