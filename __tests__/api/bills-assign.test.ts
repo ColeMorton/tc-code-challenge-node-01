@@ -280,64 +280,11 @@ describe('/api/bills/assign', () => {
       expect(data.error).toBe('Bill must be in Draft or Submitted stage to be assigned')
     })
 
-    it('should find and assign an unassigned bill when no billId provided', async () => {
-      const requestBody = {
-        userId: 'user1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockSubmittedStage = { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      const mockUnassignedBill = {
-        id: 'unassigned-bill',
-        billReference: 'BILL-002',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'submitted-stage',
-        submittedAt: new Date('2024-01-01'),
-        billStage: mockSubmittedStage
-      }
-      const mockUpdatedBill = {
-        ...mockUnassignedBill,
-        assignedToId: 'user1',
-        assignedTo: mockUser,
-        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.billStage.findMany.mockResolvedValue([mockSubmittedStage])
-      mockPrisma.bill.findMany.mockResolvedValue([mockUnassignedBill])
-      mockPrisma.bill.updateMany.mockResolvedValue({ count: 1 })
-      mockPrisma.bill.findUnique.mockResolvedValue(mockUpdatedBill)
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.message).toBe('Bill assigned successfully')
-      expect(mockPrisma.bill.findMany).toHaveBeenCalledWith({
-        where: {
-          billStageId: { in: ['submitted-stage'] },
-          assignedToId: null
-        },
-        include: {
-          billStage: true
-        },
-        take: 5,
-        orderBy: [
-          { submittedAt: 'asc' },
-          { createdAt: 'asc' }
-        ]
-      })
-    })
 
     it('should handle missing user', async () => {
       const requestBody = {
-        userId: 'non-existent-user'
+        userId: 'non-existent-user',
+        billId: 'bill1'
       }
 
       mockPrisma.user.findUnique.mockResolvedValue(null)
@@ -355,7 +302,7 @@ describe('/api/bills/assign', () => {
     })
 
     it('should validate required userId field', async () => {
-      const requestBody = {}
+      const requestBody = { billId: 'bill1' }
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
@@ -369,16 +316,8 @@ describe('/api/bills/assign', () => {
       expect(data.error).toBe('userId is required')
     })
 
-    it('should handle missing assignable stages', async () => {
-      const requestBody = {
-        userId: 'user1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.billStage.findMany.mockResolvedValue([]) // No assignable stages
+    it('should validate required billId field', async () => {
+      const requestBody = { userId: 'user1' }
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
@@ -388,9 +327,10 @@ describe('/api/bills/assign', () => {
       const response = await POST(request)
       const data = await response.json()
 
-      expect(response.status).toBe(500)
-      expect(data.error).toBe('No assignable stages found')
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('billId is required')
     })
+
 
     it('should handle database errors during assignment', async () => {
       const requestBody = {
@@ -402,7 +342,7 @@ describe('/api/bills/assign', () => {
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
       mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.billStage.findMany.mockRejectedValue(new Error('Database connection failed'))
+      mockPrisma.bill.findUnique.mockRejectedValue(new Error('Database connection failed'))
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
@@ -485,72 +425,5 @@ describe('/api/bills/assign', () => {
       })
     })
 
-    it('should handle assignment when user has exactly 2 bills (boundary case)', async () => {
-      const requestBody = {
-        userId: 'user1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
-      const mockUnassignedBill = {
-        id: 'unassigned-bill',
-        billReference: 'BILL-BOUNDARY',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
-      }
-      const mockUpdatedBill = {
-        ...mockUnassignedBill,
-        assignedToId: 'user1',
-        assignedTo: mockUser,
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#9CA3AF' }
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(2) // User has exactly 2 bills
-      mockPrisma.billStage.findMany.mockResolvedValue([mockDraftStage])
-      mockPrisma.bill.findMany.mockResolvedValue([mockUnassignedBill])
-      mockPrisma.bill.updateMany.mockResolvedValue({ count: 1 })
-      mockPrisma.bill.findUnique.mockResolvedValue(mockUpdatedBill)
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.message).toBe('Bill assigned successfully')
-      expect(mockPrisma.bill.count).toHaveBeenCalledWith({
-        where: { assignedToId: 'user1' }
-      })
-    })
-
-    it('should return 404 when no unassigned bills found', async () => {
-      const requestBody = {
-        userId: 'user1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.billStage.findMany.mockResolvedValue([mockDraftStage])
-      mockPrisma.bill.findMany.mockResolvedValue([]) // No unassigned bills
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(404)
-      expect(data.error).toBe('No unassigned bills in Draft or Submitted stage found')
-    })
   })
 })

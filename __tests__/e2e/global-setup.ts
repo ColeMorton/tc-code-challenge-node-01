@@ -12,7 +12,7 @@ async function globalSetup() {
   const testDbPath = path.join(process.cwd(), 'prisma', 'test-e2e.db')
   const originalEnv = process.env.DATABASE_URL
 
-  // Set E2E test database URL
+  // Set E2E test database URL - this persists for the entire test run
   process.env.DATABASE_URL = `file:${testDbPath}`
 
   try {
@@ -38,15 +38,11 @@ async function globalSetup() {
 
     // Store the database path for teardown
     process.env.E2E_TEST_DB_PATH = testDbPath
+    process.env.E2E_ORIGINAL_DATABASE_URL = originalEnv || ''
 
   } catch (error) {
     console.error('❌ Failed to setup E2E test environment:', error)
     process.exit(1)
-  } finally {
-    // Restore original DATABASE_URL
-    if (originalEnv) {
-      process.env.DATABASE_URL = originalEnv
-    }
   }
 }
 

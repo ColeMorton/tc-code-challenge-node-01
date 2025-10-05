@@ -82,13 +82,13 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
       expect(revalidateData.message).toBe('Bill reference already exists')
     })
 
-    it('should handle bill creation with auto-assignment workflow', async () => {
+    it('should handle bill creation with manual assignment workflow', async () => {
       const { users } = await getTestData()
       const user = users[0]
 
       // Step 1: Create unassigned bill
       const billData = {
-        billReference: 'AUTO-WORKFLOW-001',
+        billReference: 'MANUAL-WORKFLOW-001',
         billDate: '2024-01-15'
         // No assignedToId - creating unassigned bill
       }
@@ -104,7 +104,7 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
       })
       expect(billFromDb!.billStage.label).toBe('Draft')
 
-      // Step 2: Auto-assign the bill
+      // Step 2: Manually assign the bill
       const assignRequest = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify({
@@ -123,7 +123,7 @@ describe('Bill Lifecycle Workflow Integration Tests', () => {
       // Step 3: Verify assignment persisted
       const verifyResponse = await GET()
       const verifyBills = await verifyResponse.json()
-      const assignedBill = verifyBills.find((b: BillWithRelations) => b.billReference === 'AUTO-WORKFLOW-001')
+      const assignedBill = verifyBills.find((b: BillWithRelations) => b.billReference === 'MANUAL-WORKFLOW-001')
 
       expect(assignedBill.assignedTo.id).toBe(user.id)
     })

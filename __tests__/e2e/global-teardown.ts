@@ -14,6 +14,12 @@ async function globalTeardown() {
       console.log('🗑️  Removed E2E test database')
     }
 
+    // Restore original DATABASE_URL
+    const originalEnv = process.env.E2E_ORIGINAL_DATABASE_URL
+    if (originalEnv) {
+      process.env.DATABASE_URL = originalEnv
+    }
+
     console.log('✅ E2E test cleanup complete!')
   } catch (error) {
     console.error('❌ Error during E2E test cleanup:', error)

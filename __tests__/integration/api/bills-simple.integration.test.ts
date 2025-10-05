@@ -526,39 +526,5 @@ describe('Bills API Integration Tests (Direct Route Testing)', () => {
       })
     })
 
-    it('should handle auto-assignment for single user first', async () => {
-      const { users } = await getTestData()
-      const user1 = users[0]
-
-      // Create an unassigned bill
-      await createTestBill('SINGLE-AUTO-ASSIGN', 'Submitted')
-
-      // Make auto-assignment request (no billId specified)
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: user1.id
-          // No billId - should auto-assign
-        })
-      })
-
-      const response = await assignPOST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.message).toBe('Bill assigned successfully')
-
-      // Verify user got assigned the bill
-      const user1Bills = await testPrisma.bill.count({
-        where: { assignedToId: user1.id }
-      })
-      expect(user1Bills).toBe(1)
-    })
-
-    // NOTE: Concurrent auto-assignment test removed due to environmental issues
-    // Comprehensive auto-assignment testing is covered in:
-    // - __tests__/integration/workflows/auto-assignment.integration.test.ts
-    // - Single auto-assignment test above
-    // - Concurrent specific bill assignment tests above
   })
 })

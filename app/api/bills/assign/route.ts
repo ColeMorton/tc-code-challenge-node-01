@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import type { Bill, BillStage } from '@prisma/client'
+
+const MAX_RETRIES = 3
 
 export async function POST(request: Request) {
   try {
@@ -15,8 +16,16 @@ export async function POST(request: Request) {
       )
     }
 
-    // Use transaction to prevent race conditions when checking and updating bill assignments
-    const updatedBill = await prisma.$transaction(async (tx) => {
+    if (!billId) {
+      return NextResponse.json(
+        { error: 'billId is required' },
+        { status: 400 }
+      )
+    }
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const updatedBill = await prisma.$transaction(async (tx) => {
       // Check if user exists
       const user = await tx.user.findUnique({
         where: { id: userId }
@@ -35,118 +44,37 @@ export async function POST(request: Request) {
         throw new Error('User already has the maximum of 3 bills assigned')
       }
 
-      // Get assignable stages (Draft and Submitted)
-      const assignableStages = await tx.billStage.findMany({
-        where: {
-          label: {
-            in: ['Draft', 'Submitted']
-          }
+      // Find the specific bill
+      const bill = await tx.bill.findUnique({
+        where: { id: billId },
+        include: {
+          billStage: true
         }
       })
 
-      if (assignableStages.length === 0) {
-        throw new Error('No assignable stages found')
+      if (!bill) {
+        throw new Error('Bill not found')
       }
 
-      const assignableStageIds = assignableStages.map(stage => stage.id)
-
-      let bill: (Bill & { billStage: BillStage }) | null = null
-      if (billId) {
-        // Assign specific bill if provided
-        bill = await tx.bill.findUnique({
-          where: { id: billId },
-          include: {
-            billStage: true
-          }
-        })
-
-        if (!bill) {
-          throw new Error('Bill not found')
-        }
-
-        if (!['Draft', 'Submitted'].includes(bill.billStage.label)) {
-          throw new Error('Bill must be in Draft or Submitted stage to be assigned')
-        }
-      } else {
-        // Find and lock an unassigned bill using updateMany with conditional WHERE
-        // This prevents race conditions by atomically checking and updating in one operation
-        const candidateBills = await tx.bill.findMany({
-          where: {
-            billStageId: { in: assignableStageIds },
-            assignedToId: null
-          },
-          include: {
-            billStage: true
-          },
-          take: 5, // Get multiple candidates in case of concurrent updates
-          orderBy: [
-            { submittedAt: 'asc' },
-            { createdAt: 'asc' }
-          ]
-        })
-
-        if (candidateBills.length === 0) {
-          throw new Error('No unassigned bills in Draft or Submitted stage found')
-        }
-
-        // Try to claim the first candidate by updating only if still unassigned
-        let claimedBill = null
-        for (const candidate of candidateBills) {
-          const updateData: { assignedToId: string; submittedAt?: Date } = {
-            assignedToId: userId
-          }
-
-          if (candidate.billStage.label === 'Submitted' && !candidate.submittedAt) {
-            updateData.submittedAt = new Date()
-          }
-
-          // Atomic update: only succeeds if bill is still unassigned
-          const result = await tx.bill.updateMany({
-            where: {
-              id: candidate.id,
-              assignedToId: null // Critical: only update if still null
-            },
-            data: updateData
-          })
-
-          if (result.count > 0) {
-            // Successfully claimed this bill
-            claimedBill = await tx.bill.findUnique({
-              where: { id: candidate.id },
-              include: {
-                billStage: true,
-                assignedTo: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true
-                  }
-                }
-              }
-            })
-            break
-          }
-        }
-
-        if (!claimedBill) {
-          throw new Error('No unassigned bills in Draft or Submitted stage found')
-        }
-
-        return claimedBill
+      if (bill.assignedToId !== null) {
+        throw new Error('Bill is already assigned')
       }
 
-      // Update the bill assignment with stage-specific logic
+      if (!['Draft', 'Submitted'].includes(bill.billStage.label)) {
+        throw new Error('Bill must be in Draft or Submitted stage to be assigned')
+      }
+
+      // Update the bill assignment
       const updateData: { assignedToId: string; submittedAt?: Date } = {
         assignedToId: userId
       }
 
-      // Set submittedAt if the bill is in Submitted stage and doesn't have it yet
-      if (bill && bill.billStage && bill.billStage.label === 'Submitted' && !bill.submittedAt) {
+      if (bill.billStage.label === 'Submitted' && !bill.submittedAt) {
         updateData.submittedAt = new Date()
       }
 
-      return await tx.bill.update({
-        where: { id: bill!.id },
+      const updated = await tx.bill.update({
+        where: { id: bill.id },
         data: updateData,
         include: {
           assignedTo: {
@@ -165,16 +93,38 @@ export async function POST(request: Request) {
           }
         }
       })
-    })
 
-    return NextResponse.json({
-      message: 'Bill assigned successfully',
-      bill: updatedBill
-    })
+      // OPTIMISTIC LOCK: Verify the constraint after update
+      const finalBillCount = await tx.bill.count({
+        where: { assignedToId: userId }
+      })
+
+      if (finalBillCount > 3) {
+        throw new Error('RETRY_RACE_CONDITION')
+      }
+
+      return updated
+        })
+
+        return NextResponse.json({
+          message: 'Bill assigned successfully',
+          bill: updatedBill
+        })
+
+      } catch (error) {
+        if (error instanceof Error && error.message === 'RETRY_RACE_CONDITION') {
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    throw new Error('Failed to assign bill due to concurrent updates. Please try again.')
+
   } catch (error) {
     console.error('Failed to assign bill:', error)
 
-    // Handle specific error cases
     if (error instanceof Error) {
       if (error.message === 'User not found') {
         return NextResponse.json(
@@ -188,7 +138,7 @@ export async function POST(request: Request) {
           { status: 409 }
         )
       }
-      if (error.message === 'Bill not found' || error.message === 'No unassigned bills in Draft or Submitted stage found') {
+      if (error.message === 'Bill not found' || error.message === 'Bill is already assigned') {
         return NextResponse.json(
           { error: error.message },
           { status: 404 }
@@ -200,10 +150,10 @@ export async function POST(request: Request) {
           { status: 400 }
         )
       }
-      if (error.message === 'No assignable stages found') {
+      if (error.message.includes('concurrent updates')) {
         return NextResponse.json(
           { error: error.message },
-          { status: 500 }
+          { status: 503 }
         )
       }
     }
