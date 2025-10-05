@@ -46,10 +46,12 @@ export interface MockPrismaClient {
     findUnique: jest.MockedFunction<(args: Record<string, unknown>) => Promise<MockBillWithRelations | null>>
     create: jest.MockedFunction<(args: Record<string, unknown>) => Promise<MockBillWithRelations>>
     update: jest.MockedFunction<(args: Record<string, unknown>) => Promise<MockBillWithRelations>>
+    updateMany: jest.MockedFunction<(args: Record<string, unknown>) => Promise<{ count: number }>>
     count: jest.MockedFunction<(args?: Record<string, unknown>) => Promise<number>>
   }
   billStage: {
     findFirst: jest.MockedFunction<(args?: Record<string, unknown>) => Promise<MockBillStage | null>>
     findMany: jest.MockedFunction<(args?: Record<string, unknown>) => Promise<MockBillStage[]>>
   }
+  $transaction: jest.MockedFunction<(callback: (tx: MockPrismaClient) => Promise<unknown>) => Promise<unknown>>
 }
