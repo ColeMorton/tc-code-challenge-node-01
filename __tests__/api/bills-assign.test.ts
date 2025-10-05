@@ -64,7 +64,8 @@ describe('/api/bills/assign', () => {
         billDate: new Date('2024-01-01'),
         billStageId: 'submitted-stage',
         billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
-        submittedAt: new Date('2024-01-01') // Already has submittedAt
+        submittedAt: new Date('2024-01-01'), // Already has submittedAt
+        assignedToId: null // Not yet assigned
       }
       const mockUpdatedBill = {
         ...mockBill,
@@ -156,7 +157,8 @@ describe('/api/bills/assign', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'approved-stage',
-        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' } // Not assignable stage
+        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' }, // Not assignable stage
+        assignedToId: null
       }
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
@@ -193,7 +195,8 @@ describe('/api/bills/assign', () => {
         billDate: new Date('2024-01-01'),
         billStageId: 'draft-stage',
         billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        submittedAt: null
+        submittedAt: null,
+        assignedToId: null
       }
       const mockUpdatedBill = {
         ...mockBill,
@@ -260,7 +263,8 @@ describe('/api/bills/assign', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'approved-stage',
-        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' } // Not assignable
+        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' }, // Not assignable
+        assignedToId: null
       }
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
@@ -373,7 +377,8 @@ describe('/api/bills/assign', () => {
         billDate: new Date('2024-01-01'),
         billStageId: 'submitted-stage',
         billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
-        submittedAt: null // No submittedAt timestamp yet
+        submittedAt: null, // No submittedAt timestamp yet
+        assignedToId: null
       }
       const mockUpdatedBill = {
         ...mockBill,
