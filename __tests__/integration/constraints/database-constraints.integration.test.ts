@@ -382,6 +382,93 @@ describe('Database Constraints and Error Scenarios Integration Tests', () => {
     })
   })
 
+  describe('Race Condition Prevention', () => {
+    it('should prevent concurrent assignments from exceeding user bill limit', async () => {
+      const { users } = await getTestData()
+      const user = users[0]
+
+      // User currently has 2 bills
+      await createTestBill('RACE-BILL-1', 'Draft', user.id)
+      await createTestBill('RACE-BILL-2', 'Draft', user.id)
+
+      // Create 5 unassigned bills
+      const unassignedBills = await Promise.all([
+        createTestBill('RACE-UNASSIGNED-1', 'Submitted'),
+        createTestBill('RACE-UNASSIGNED-2', 'Submitted'),
+        createTestBill('RACE-UNASSIGNED-3', 'Submitted'),
+        createTestBill('RACE-UNASSIGNED-4', 'Submitted'),
+        createTestBill('RACE-UNASSIGNED-5', 'Submitted')
+      ])
+
+      // Try to assign all 5 bills concurrently (user should only get 1 more)
+      const assignmentPromises = unassignedBills.map(bill => {
+        const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+          method: 'POST',
+          body: JSON.stringify({
+            userId: user.id,
+            billId: bill.id
+          })
+        })
+        return assignPOST(request)
+      })
+
+      const responses = await Promise.all(assignmentPromises)
+
+      // Verify results
+      const successResponses = responses.filter(r => r.status === 200)
+      const failureResponses = responses.filter(r => r.status === 409)
+
+      // Exactly 1 should succeed (bringing user to 3 bills)
+      expect(successResponses.length).toBe(1)
+      // The remaining 4 should fail with 409 Conflict
+      expect(failureResponses.length).toBe(4)
+
+      // Verify user has exactly 3 bills assigned
+      const userBillCount = await testPrisma.bill.count({
+        where: { assignedToId: user.id }
+      })
+      expect(userBillCount).toBe(3)
+    })
+
+    it('should handle concurrent auto-assignments without exceeding limit', async () => {
+      const { users } = await getTestData()
+      const user = users[0]
+
+      // User has 2 bills
+      await createTestBill('AUTO-RACE-1', 'Draft', user.id)
+      await createTestBill('AUTO-RACE-2', 'Draft', user.id)
+
+      // Create unassigned bills
+      await createTestBill('AUTO-UNASSIGNED-1', 'Submitted')
+      await createTestBill('AUTO-UNASSIGNED-2', 'Submitted')
+      await createTestBill('AUTO-UNASSIGNED-3', 'Submitted')
+
+      // Simulate 3 concurrent auto-assignment requests (no billId specified)
+      const assignmentPromises = Array(3).fill(null).map(() => {
+        const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+          method: 'POST',
+          body: JSON.stringify({ userId: user.id })
+        })
+        return assignPOST(request)
+      })
+
+      const responses = await Promise.all(assignmentPromises)
+
+      const successResponses = responses.filter(r => r.status === 200)
+      const failureResponses = responses.filter(r => r.status === 409)
+
+      // Only 1 should succeed
+      expect(successResponses.length).toBe(1)
+      expect(failureResponses.length).toBe(2)
+
+      // Verify user has exactly 3 bills
+      const userBillCount = await testPrisma.bill.count({
+        where: { assignedToId: user.id }
+      })
+      expect(userBillCount).toBe(3)
+    })
+  })
+
   describe('Edge Cases and Boundary Conditions', () => {
     it('should handle assignment when user already has maximum bills', async () => {
       const { users } = await getTestData()

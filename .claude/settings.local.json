@@ -23,7 +23,12 @@
       "Bash(npx next:*)",
       "Bash(npx tsc:*)",
       "Bash(npx eslint:*)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git cherry-pick:*)",
+      "Bash(git worktree add:*)",
+      "Bash(git worktree:*)",
+      "Bash(npm test:*)",
+      "Bash(npx jest:*)",
+      "Bash(./node_modules/.bin/jest:*)"
     ],
     "deny": [],
     "ask": []
