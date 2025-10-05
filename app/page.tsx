@@ -1,26 +1,31 @@
-export default function Home() {
+import { Card } from '@/app/ui/dashboard/cards';
+// import LatestInvoices from '@/app/ui/dashboard/latest-invoices';
+// import RevenueChart from '@/app/ui/dashboard/revenue-chart';
+// import { lusitana } from '@/app/ui/fonts';
+import { Suspense } from 'react';
+import {
+  BillsTableSkeleton,
+  CardsSkeleton
+ } from '@/app/ui/skeletons';
+import CardWrapper from '@/app/ui/dashboard/cards';
+import BillsTable from '@/app/ui/bills/table';
+
+export default async function Page() {
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900"></div>
-      
-      <div className="relative z-10 min-h-screen flex items-center justify-center">
-        <main className="text-center space-y-8 px-8">
-          <div className="relative pb-4">
-            <h1 className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent animate-pulse pb-4">
-              Trilogy Care
-            </h1>
-            <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent blur-sm opacity-50 text-6xl md:text-8xl font-bold">
-              Trilogy Care
-            </div>
-          </div>
-          
-          <div className="relative">
-            <h2 className="text-xl md:text-2xl text-white/90 font-medium backdrop-blur-sm bg-white/10 rounded-full px-8 py-4 border border-white/20 shadow-2xl">
-              Please view the README.md file for the task instructions
-            </h2>
-          </div>
-        </main>
+    <main>
+      <h1 className='mb-4 text-xl md:text-2xl text-center'>
+        Bills
+      </h1>
+      <div className="px-12 py-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-4 [&>*:not(:last-child)]:pb-12 bg-gray-200">
+        <Suspense fallback={<CardsSkeleton />}>
+          <CardWrapper />
+        </Suspense>
+        <div className="col-span-full rounded-xl bg-gray-100 shadow-sm">
+          <Suspense fallback={<BillsTableSkeleton />}>
+            <BillsTable />
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
