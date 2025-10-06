@@ -1,5 +1,6 @@
 export type {
   MockUser,
+  MockApiUser,
   MockBillStage,
   MockBill,
   MockBillWithRelations,

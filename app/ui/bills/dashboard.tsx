@@ -175,7 +175,7 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
                               aria-describedby={isAssigning ? `assigning-${bill.id}` : undefined}
                             >
                               <option value="" disabled>
-                                {isAssigning ? 'Assigning...' : 'Assign to user...'}
+                                {isAssigning ? 'Assigning...' : 'Assign'}
                               </option>
                               {users.map((user) => (
                                 <option key={user.id} value={user.id}>

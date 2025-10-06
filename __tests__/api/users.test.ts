@@ -1,6 +1,6 @@
 import { GET } from '@/app/api/users/route'
 import { prisma } from '@/app/lib/prisma'
-import type { MockPrismaClient } from '../types/mocks'
+import type { MockApiUser } from '../types/mocks'
 
 // Mock Prisma
 jest.mock('@/app/lib/prisma', () => ({
@@ -11,7 +11,11 @@ jest.mock('@/app/lib/prisma', () => ({
   }
 }))
 
-const mockPrisma = prisma as unknown as Pick<MockPrismaClient, 'user'>
+const mockPrisma = prisma as unknown as {
+  user: {
+    findMany: jest.MockedFunction<(args?: Record<string, unknown>) => Promise<MockApiUser[]>>
+  }
+}
 
 // Mock console.error to suppress expected error logs during testing
 const originalConsoleError = console.error
@@ -30,7 +34,7 @@ describe('/api/users', () => {
 
   describe('GET /api/users', () => {
     it('should return all users ordered by creation date descending', async () => {
-      const mockUsers = [
+      const mockUsers: MockApiUser[] = [
         {
           id: '1',
           name: 'John Doe',
@@ -122,7 +126,7 @@ describe('/api/users', () => {
     })
 
     it('should return users with all expected fields', async () => {
-      const mockUsers = [
+      const mockUsers: MockApiUser[] = [
         {
           id: '1',
           name: 'John Doe',

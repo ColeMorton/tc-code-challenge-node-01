@@ -285,6 +285,17 @@ export interface MockUser {
 }
 
 /**
+ * Mock user for API testing (with serialized dates)
+ */
+export interface MockApiUser {
+  id: string
+  name: string
+  email: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+/**
  * Mock bill stage for testing
  */
 export interface MockBillStage {
