@@ -35,13 +35,13 @@ describe('/api/users', () => {
           id: '1',
           name: 'John Doe',
           email: 'john@example.com',
-          createdAt: new Date('2024-01-02T00:00:00.000Z')
+          createdAt: '2024-01-02T00:00:00.000Z'
         },
         {
           id: '2',
           name: 'Jane Smith',
           email: 'jane@example.com',
-          createdAt: new Date('2024-01-01T00:00:00.000Z')
+          createdAt: '2024-01-01T00:00:00.000Z'
         }
       ]
 
@@ -127,8 +127,8 @@ describe('/api/users', () => {
           id: '1',
           name: 'John Doe',
           email: 'john@example.com',
-          createdAt: new Date('2024-01-01T00:00:00.000Z'),
-          updatedAt: new Date('2024-01-01T00:00:00.000Z')
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-01T00:00:00.000Z'
         }
       ]
 
