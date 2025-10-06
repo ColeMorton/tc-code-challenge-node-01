@@ -295,7 +295,18 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
       })
 
       revalidatePath('/bills')
-      return { success: true, bill: result }
+      return { 
+        success: true, 
+        bill: result ? {
+          id: result.id,
+          billReference: result.billReference,
+          billDate: result.billDate,
+          assignedToId: result.assignedToId,
+          billStageId: result.billStageId,
+          assignedTo: result.assignedTo || undefined,
+          billStage: result.billStage
+        } : undefined
+      }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'

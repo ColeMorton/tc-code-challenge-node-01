@@ -157,8 +157,15 @@ export async function getCachedUserCapacity(userId: string): Promise<{
   const cacheKey = CACHE_KEYS.USER_CAPACITY(userId)
   const cached = cache.get(cacheKey)
   
-  if (cached !== null) {
-    return cached
+  if (cached !== null && cached !== undefined) {
+    return cached as {
+      userId: string
+      userName: string
+      userEmail: string
+      currentAssignedCount: number
+      availableSlots: number
+      capacityStatus: string
+    }
   }
 
   // Fetch from database

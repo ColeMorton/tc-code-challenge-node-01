@@ -81,7 +81,15 @@ describe('Bills Server Actions', () => {
     it('should return invalid for existing reference', async () => {
       mockPrisma.bill.findUnique.mockResolvedValue({
         id: 'bill1',
-        billReference: 'BILL-EXISTS-001'
+        billReference: 'BILL-EXISTS-001',
+        billDate: new Date('2024-01-15'),
+        billStageId: 'stage1',
+        assignedToId: null,
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15'),
+        submittedAt: null,
+        approvedAt: null,
+        onHoldAt: null
       })
 
       const result = await validateBillReference('BILL-EXISTS-001')
@@ -150,7 +158,15 @@ describe('Bills Server Actions', () => {
 
       mockPrisma.bill.findUnique.mockResolvedValue({
         id: 'bill1',
-        billReference: 'BILL-EXISTS-001'
+        billReference: 'BILL-EXISTS-001',
+        billDate: new Date('2024-01-15'),
+        billStageId: 'stage1',
+        assignedToId: null,
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15'),
+        submittedAt: null,
+        approvedAt: null,
+        onHoldAt: null
       })
 
       await expect(createBill(input)).rejects.toThrow('Bill reference already exists')
@@ -196,7 +212,7 @@ describe('Bills Server Actions', () => {
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
       mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.billStage.findFirst.mockResolvedValue({ id: 'submitted-stage', label: 'Submitted' })
+      mockPrisma.billStage.findFirst.mockResolvedValue({ id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' })
       mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'c9876543210987654321098765' })
 
       const result = await assignBillAction(input)
@@ -443,7 +459,7 @@ describe('Bills Server Actions', () => {
 
       // Mock cache to reject assignment
       const { canUserBeAssignedBillCached } = await import('@/lib/cache')
-      canUserBeAssignedBillCached.mockResolvedValue({
+      ;(canUserBeAssignedBillCached as jest.Mock).mockResolvedValue({
         canAssign: false,
         reason: 'User not found',
         currentCount: 0,
@@ -461,7 +477,7 @@ describe('Bills Server Actions', () => {
 
       // Mock cache to allow assignment so we can test database error
       const { canUserBeAssignedBillCached } = await import('@/lib/cache')
-      canUserBeAssignedBillCached.mockResolvedValue({
+      ;(canUserBeAssignedBillCached as jest.Mock).mockResolvedValue({
         canAssign: true,
         currentCount: 2,
         availableSlots: 1
