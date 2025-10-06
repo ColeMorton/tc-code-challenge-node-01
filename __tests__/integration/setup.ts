@@ -8,7 +8,7 @@ jest.setTimeout(30000)
 
 // Mock Prisma client for integration tests
 // This allows server actions to use the test database
-jest.mock('@/lib/prisma', () => {
+jest.mock('@/app/lib/prisma', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { testPrisma } = require('./testUtils')
   return {

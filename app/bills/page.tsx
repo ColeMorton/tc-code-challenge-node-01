@@ -1,35 +1,12 @@
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
+import { getBills } from '@/app/lib/getBills'
+import { getUsers } from '@/app/lib/getUsers'
 import BillsDashboard from './bills-dashboard'
 
 export default async function BillsPage() {
   const [bills, users] = await Promise.all([
-    prisma.bill.findMany({
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        billStage: {
-          select: {
-            id: true,
-            label: true,
-            colour: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    }),
-    prisma.user.findMany({
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    getBills(),
+    getUsers()
   ])
 
   return (

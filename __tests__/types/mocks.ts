@@ -40,6 +40,7 @@ export type MockPrismaBillWithRelations = MockBillWithRelations
 export interface MockPrismaClient {
   user: {
     findUnique: jest.MockedFunction<(args: Record<string, unknown>) => Promise<MockUser | null>>
+    findMany: jest.MockedFunction<(args?: Record<string, unknown>) => Promise<MockUser[]>>
   }
   bill: {
     findMany: jest.MockedFunction<(args?: Record<string, unknown>) => Promise<MockBillWithRelations[]>>

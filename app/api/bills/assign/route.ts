@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 
 const MAX_RETRIES = 3
 
