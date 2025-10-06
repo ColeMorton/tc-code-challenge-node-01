@@ -17,7 +17,7 @@ jest.mock('next/navigation', () => ({
 }))
 
 // NOW import component and actions
-import BillForm from '@/app/bills/new/bill-form'
+import BillForm from '@/app/ui/bills/form'
 import { createBill, validateBillReference } from '@/app/bills/actions'
 
 // Get the mocked functions

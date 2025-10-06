@@ -1,43 +1,23 @@
 'use client'
 
-import { useState } from 'react'
-import { assignBillAction } from './actions'
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
-
-interface BillStage {
-  id: string
-  label: string
-  colour: string
-}
-
-interface Bill {
-  id: string
-  billReference: string
-  billDate: Date
-  submittedAt: Date | null
-  approvedAt: Date | null
-  onHoldAt: Date | null
-  assignedTo: User | null
-  billStage: BillStage
-}
-
-interface BillsDashboardProps {
-  bills: Bill[]
-  users: User[]
-}
-
-interface GroupedBills {
-  [stageLabel: string]: Bill[]
-}
+import { useState, useEffect } from 'react'
+import { assignBillAction } from '@/app/bills/actions'
+import {
+  Bill,
+  BillsDashboardProps,
+  GroupedBills
+} from '@/app/lib/definitions'
 
 export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
   const [error, setError] = useState<string | null>(null)
   const [assigningBillId, setAssigningBillId] = useState<string | null>(null)
+
+  // Scroll to top when any error occurs
+  useEffect(() => {
+    if (error) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [error])
 
   const groupBillsByStage = (bills: Bill[]): GroupedBills => {
     return bills.reduce((acc, bill) => {
@@ -66,7 +46,8 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
       const result = await assignBillAction({ billId, userId })
 
       if (!result.success) {
-        throw new Error(result.error)
+        setError(result.error || 'Failed to assign bill')
+        setTimeout(() => setError(null), 5000)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to assign bill')

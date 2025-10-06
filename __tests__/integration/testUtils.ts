@@ -144,6 +144,9 @@ export async function createTestBill(
  * Get test data for specific scenarios
  */
 export async function getTestData() {
+  // Ensure required data is seeded first
+  await seedRequiredData()
+  
   const stages = await testPrisma.billStage.findMany()
   const users = await testPrisma.user.findMany()
 

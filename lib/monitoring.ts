@@ -2,21 +2,10 @@
  * Performance monitoring and metrics collection for bill assignment operations
  */
 
-interface PerformanceMetric {
-  operation: string
-  duration: number
-  success: boolean
-  timestamp: number
-  metadata?: Record<string, unknown>
-  error?: string
-}
-
-interface CacheMetric {
-  hits: number
-  misses: number
-  evictions: number
-  memoryUsage: number
-}
+import {
+  PerformanceMetric,
+  CacheMetric
+} from '@/app/lib/definitions'
 
 class PerformanceMonitor {
   private metrics: PerformanceMetric[] = []

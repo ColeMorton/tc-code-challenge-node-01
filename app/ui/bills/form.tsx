@@ -13,24 +13,10 @@ import {
   FieldValidators
 } from '@/app/lib/form-validation'
 import { BillFormData } from '@/app/lib/validation'
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
-
-interface AsyncValidationState {
-  billReference: {
-    isValid: boolean
-    isChecking: boolean
-    message: string
-  }
-}
-
-interface BillFormProps {
-  users: User[]
-}
+import {
+  AsyncValidationState,
+  BillFormProps
+} from '@/app/lib/definitions'
 
 export default function BillForm({ users }: BillFormProps) {
   const router = useRouter()

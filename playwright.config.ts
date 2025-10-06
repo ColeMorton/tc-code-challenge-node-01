@@ -7,7 +7,7 @@ export default defineConfig({
   testDir: './__tests__/e2e',
   testIgnore: './__tests__/e2e/archived/**',
   /* Run tests in files in parallel */
-  fullyParallel: true,
+  fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */

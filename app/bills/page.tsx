@@ -1,14 +1,19 @@
 import Link from 'next/link'
-import { getBills } from '@/app/lib/getBills'
-import { getUsers } from '@/app/lib/getUsers'
-import BillsDashboard from './bills-dashboard'
+import { Suspense } from 'react'
+import { getBills, getUsers } from '@/app/lib/data'
+import BillsDashboard from '../ui/bills/dashboard'
+import { BillsDashboardSkeleton } from '@/app/ui/skeletons'
 
-export default async function BillsPage() {
+async function BillsDashboardWrapper() {
   const [bills, users] = await Promise.all([
     getBills(),
     getUsers()
   ])
 
+  return <BillsDashboard bills={bills} users={users} />
+}
+
+export default function BillsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -24,7 +29,9 @@ export default async function BillsPage() {
         </header>
 
         <main>
-          <BillsDashboard bills={bills} users={users} />
+          <Suspense fallback={<BillsDashboardSkeleton />}>
+            <BillsDashboardWrapper />
+          </Suspense>
         </main>
       </div>
     </div>

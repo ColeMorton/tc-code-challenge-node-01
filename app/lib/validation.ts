@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+// Validation result types
+export interface ValidationResult<T = unknown> {
+  success: boolean
+  data?: T
+  errors?: Record<string, string[]>
+}
+
 // Base schema for bill reference validation
 export const BillReferenceSchema = z.string()
   .min(1, "Bill reference is required")
@@ -50,13 +57,6 @@ export const AssignBillSchema = z.object({
 export type BillFormData = z.infer<typeof BillFormSchema>
 export type CreateBillData = z.infer<typeof CreateBillSchema>
 export type AssignBillData = z.infer<typeof AssignBillSchema>
-
-// Validation result types
-export interface ValidationResult<T = unknown> {
-  success: boolean
-  data?: T
-  errors?: Record<string, string[]>
-}
 
 // Helper function to validate and return structured results
 export function validateWithZod<T>(

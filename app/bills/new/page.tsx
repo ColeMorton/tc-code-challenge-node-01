@@ -1,5 +1,5 @@
 import { prisma } from '@/app/lib/prisma'
-import BillForm from './bill-form'
+import BillForm from '../../ui/bills/form'
 
 export default async function NewBillPage() {
   const users = await prisma.user.findMany({

@@ -1,6 +1,6 @@
 import { validateBillReference, createBill, assignBillAction } from '@/app/bills/actions'
 import { prisma } from '@/app/lib/prisma'
-import type { MockPrismaClient } from '../types/mocks'
+import type { MockPrismaClient } from '@/app/lib/definitions'
 import { revalidatePath } from 'next/cache'
 
 // Mock Prisma

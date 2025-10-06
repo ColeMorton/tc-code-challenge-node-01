@@ -4,19 +4,16 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/app/lib/prisma'
 import { monitorBillAssignment } from '@/lib/monitoring'
 import { validateCreateBillInput, validateAssignBillInput } from '@/app/lib/validation'
+import { 
+  CreateBillInput, 
+  SimpleValidationResult, 
+  AssignBillInput, 
+  AssignBillResult, 
+  BillAssignmentError
+} from '@/app/lib/definitions'
+import { ERROR_MESSAGES } from '@/app/lib/error-constants'
 
-export interface CreateBillInput {
-  billReference: string
-  billDate: string
-  assignedToId?: string
-}
-
-export interface ValidationResult {
-  isValid: boolean
-  message?: string
-}
-
-export async function validateBillReference(billReference: string): Promise<ValidationResult> {
+export async function validateBillReference(billReference: string): Promise<SimpleValidationResult> {
   if (!billReference.trim()) {
     return { isValid: true }
   }
@@ -72,61 +69,9 @@ export async function createBill(input: CreateBillInput) {
   })
 
   revalidatePath('/bills')
+  revalidatePath('/users')
 
   return bill
-}
-
-export interface AssignBillInput {
-  billId: string
-  userId: string
-}
-
-export interface AssignBillResult {
-  success: boolean
-  error?: string
-  bill?: {
-    id: string
-    billReference: string
-    billDate: Date
-    assignedToId: string | null
-    billStageId: string
-    assignedTo?: {
-      id: string
-      name: string
-      email: string
-    }
-    billStage?: {
-      id: string
-      label: string
-      colour: string
-    }
-  }
-}
-
-export enum BillAssignmentError {
-  USER_NOT_FOUND = 'USER_NOT_FOUND',
-  BILL_NOT_FOUND = 'BILL_NOT_FOUND',
-  BILL_ALREADY_ASSIGNED = 'BILL_ALREADY_ASSIGNED',
-  USER_BILL_LIMIT_EXCEEDED = 'USER_BILL_LIMIT_EXCEEDED',
-  INVALID_BILL_STAGE = 'INVALID_BILL_STAGE',
-  CONCURRENT_UPDATE = 'CONCURRENT_UPDATE',
-  VALIDATION_ERROR = 'VALIDATION_ERROR'
-}
-
-export interface DetailedError {
-  code: BillAssignmentError
-  message: string
-  details?: Record<string, unknown>
-}
-
-// Helper function - not a server action
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function createDetailedError(
-  code: BillAssignmentError, 
-  message: string, 
-  details?: Record<string, unknown>
-): DetailedError {
-  return { code, message, details }
 }
 
 const MAX_RETRIES = 3
@@ -298,21 +243,41 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
         attempt: attempt + 1
       })
 
-      // Handle specific error cases
+      // Handle specific error cases with structured error codes
       if (errorMessage.includes('User not found')) {
-        return { success: false, error: 'User not found' }
+        return { 
+          success: false, 
+          error: ERROR_MESSAGES.USER_NOT_FOUND,
+          errorCode: BillAssignmentError.USER_NOT_FOUND
+        }
       }
       if (errorMessage.includes('Bill not found')) {
-        return { success: false, error: 'Bill not found' }
+        return { 
+          success: false, 
+          error: ERROR_MESSAGES.BILL_NOT_FOUND,
+          errorCode: BillAssignmentError.BILL_NOT_FOUND
+        }
       }
       if (errorMessage.includes('already assigned')) {
-        return { success: false, error: 'Bill is already assigned' }
+        return { 
+          success: false, 
+          error: ERROR_MESSAGES.BILL_ALREADY_ASSIGNED,
+          errorCode: BillAssignmentError.BILL_ALREADY_ASSIGNED
+        }
       }
       if (errorMessage.includes('maximum of 3 bills')) {
-        return { success: false, error: 'User already has the maximum of 3 bills assigned' }
+        return { 
+          success: false, 
+          error: ERROR_MESSAGES.USER_BILL_LIMIT_EXCEEDED,
+          errorCode: BillAssignmentError.USER_BILL_LIMIT_EXCEEDED
+        }
       }
       if (errorMessage.includes('Draft or Submitted stage')) {
-        return { success: false, error: 'Bill must be in Draft or Submitted stage to be assigned' }
+        return { 
+          success: false, 
+          error: ERROR_MESSAGES.INVALID_BILL_STAGE,
+          errorCode: BillAssignmentError.INVALID_BILL_STAGE
+        }
       }
 
       // If this is the last attempt, return the error

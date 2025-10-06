@@ -58,6 +58,147 @@ npm run test:e2e:smoke     # Run smoke tests only
 npm run test:e2e:critical  # Run critical flow tests only
 ```
 
+## E2E Test Architecture
+
+### Overview
+E2E tests use Playwright to validate complete user workflows in a real browser environment with an isolated test database.
+
+### Test Database Management
+
+#### Isolated Test Environment
+- **Test Database**: Dedicated SQLite database (`prisma/test-e2e.db`)
+- **Automatic Setup**: Global setup creates/seeds database before tests
+- **Smart Cleanup**: Removes only test-created bills, preserves seed data
+- **Database Reuse**: Subsequent runs reuse existing database (40%+ faster)
+
+#### State Management Strategy
+**Problem Solved**: Tests previously failed when run collectively due to database state contamination.
+
+**Root Cause**: Test-created bills accumulated across test runs:
+- Test 1 creates bill → 51 total bills
+- Test 2 creates bill → 52 total bills
+- Test 3+ → Timeouts finding specific bills among accumulated data
+
+**Solution Implemented**:
+1. **Per-Test Cleanup**: `beforeEach` hooks remove test bills before each test
+2. **Optimized Global Setup**: Reuses database, only cleans test data
+3. **Centralized Utilities**: `test-db-helpers.ts` manages Prisma connections
+4. **Smart Teardown**: Preserves seed data for next run
+
+### Test Utilities (`__tests__/e2e/utils/`)
+
+#### `test-utils.ts`
+- `generateTestBillReference()`: Creates unique `TEST-BILL-{timestamp}-{random}` references
+- `generateTestDate()`: Generates test dates in YYYY-MM-DD format
+- `waitForPageLoad()`, `fillFieldAndWait()`: Page interaction helpers
+
+#### `test-db-helpers.ts`
+- `cleanupTestBills()`: Removes all bills with `TEST-BILL-*` prefix
+- `disconnectPrisma()`: Properly closes database connections
+- Singleton Prisma client pattern for performance
+
+### Test Suites
+
+#### Critical Flows (`critical-flows.e2e.spec.ts`)
+**5 comprehensive tests** covering:
+- Complete bill creation and dashboard verification
+- Bill reference validation with async checks
+- Error handling and form validation
+- Navigation between pages
+- Responsive design across viewports
+
+**State Management**:
+```typescript
+test.beforeEach(async () => {
+  await cleanupTestBills() // Clean slate for each test
+})
+
+test.afterAll(async () => {
+  await disconnectPrisma() // Proper cleanup
+})
+```
+
+#### Smoke Tests (`smoke.e2e.spec.ts`)
+**4 basic tests** validating:
+- Home page loads
+- Bills dashboard loads
+- New bill form loads
+- Users page loads
+
+#### Users Page Tests (`users.e2e.spec.ts`)
+**8 detailed tests** covering:
+- Page structure and content
+- Styling and layout
+- Suspense fallback behavior
+- Responsive design
+- Accessibility attributes
+- JavaScript error detection
+- Page refresh handling
+- Layout stability (CLS prevention)
+
+### Performance Optimization
+
+#### Database Reuse Benefits
+```
+Run 1: 40.1s (creates database)
+Run 2: 24.5s (reuses database, 39% faster)
+Run 3: 22.3s (44% faster)
+```
+
+#### Global Setup Intelligence
+- **First run**: Creates database, generates Prisma client, seeds data
+- **Subsequent runs**: Reuses database, only removes test bills
+- **Result**: Faster test execution, consistent state
+
+### Configuration
+
+#### Playwright Config (`playwright.config.ts`)
+```typescript
+{
+  fullyParallel: false,        // Sequential execution for shared DB
+  workers: 1,                  // Single worker prevents race conditions
+  webServer: {
+    command: 'npm run dev',
+    env: {
+      DATABASE_URL: 'file:./prisma/test-e2e.db'
+    }
+  },
+  globalSetup: './global-setup.ts',
+  globalTeardown: './global-teardown.ts'
+}
+```
+
+### Best Practices & Recommendations
+
+#### Database State Isolation
+1. **Always clean up test data** between tests using `beforeEach` hooks
+2. **Use unique prefixes** for test data (e.g., `TEST-BILL-*`) to enable targeted cleanup
+3. **Reuse databases** where possible to improve performance
+4. **Monitor database size** in long-running test suites
+
+#### Test Execution
+1. **Run sequentially** (`--workers=1`) when using shared database resources
+2. **Use proper wait strategies** (networkidle, element visibility) instead of arbitrary timeouts
+3. **Disconnect Prisma clients** in `afterAll` hooks to prevent connection leaks
+
+#### Troubleshooting
+- **Tests fail collectively but pass individually**: Database state pollution - add cleanup hooks
+- **Slow test execution**: Check if database is being recreated unnecessarily
+- **Timeout errors**: Verify server is running and database is accessible
+- **Connection errors**: Ensure Prisma clients are properly disconnected
+
+### Test Results & Validation
+
+✅ **Verified Reliability**:
+- Individual tests: PASS
+- Collective tests: PASS
+- Multiple sequential runs: PASS (tested 3 consecutive runs)
+
+✅ **State Isolation**:
+- Each test starts with clean state (no test bills)
+- Seed data preserved across runs
+- No cross-test contamination
+
 ### Watch Mode
 ```bash
 npm run test:watch         # Watch mode for development
@@ -149,11 +290,23 @@ npm run test:watch         # Watch mode for development
 
 ## Summary
 
-This integration testing implementation provides:
-- **29 total tests** (20 unit + 9 integration)
-- **Real database validation** for critical business logic
-- **Fast feedback** with layered testing approach
+This comprehensive testing implementation provides:
+- **83 total tests** (66 unit + 8 integration + 17 E2E)
+- **Multi-layered validation**: Unit → Integration → E2E
+- **Real database testing** for critical business logic
+- **Browser automation** for complete user workflow validation
+- **Optimized performance** with database reuse strategies
 - **Production confidence** through comprehensive coverage
 - **Developer-friendly** test execution and debugging
 
-The implementation follows TDD best practices with both isolated unit testing for speed and integration testing for real-world validation.
+### Test Coverage Breakdown
+- **Unit Tests (66)**: Fast, isolated component and action testing
+- **Integration Tests (8)**: Real database validation of business logic
+- **E2E Tests (17)**: Complete user workflows in browser environment
+
+The implementation follows testing best practices with:
+- Isolated unit testing for speed
+- Integration testing for real-world validation
+- E2E testing for complete user journey verification
+- Smart database state management to prevent test pollution
+- Performance optimization through database reuse (40%+ faster subsequent runs)

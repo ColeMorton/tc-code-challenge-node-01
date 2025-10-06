@@ -8,10 +8,28 @@ async function globalTeardown() {
     // Get the test database path from environment variable
     const testDbPath = process.env.E2E_TEST_DB_PATH || path.join(process.cwd(), 'prisma', 'test-e2e.db')
 
-    // Remove the test database file
+    // Clean up test bills instead of removing the entire database
+    // This allows the database to be reused across multiple test runs
     if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath)
-      console.log('🗑️  Removed E2E test database')
+      const { PrismaClient } = await import('@prisma/client')
+      const prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: `file:${testDbPath}`
+          }
+        }
+      })
+
+      try {
+        await prisma.bill.deleteMany({
+          where: {
+            billReference: { startsWith: 'TEST-BILL-' }
+          }
+        })
+        console.log('🗑️  Cleaned up test bills from E2E database')
+      } finally {
+        await prisma.$disconnect()
+      }
     }
 
     // Restore original DATABASE_URL

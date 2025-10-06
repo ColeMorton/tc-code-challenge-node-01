@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 jest.mock('@/app/bills/actions')
 
 // NOW import component and actions
-import BillsDashboard from '@/app/bills/bills-dashboard'
+import BillsDashboard from '@/app/ui/bills/dashboard'
 import { assignBillAction } from '@/app/bills/actions'
 
 // Get the mocked function

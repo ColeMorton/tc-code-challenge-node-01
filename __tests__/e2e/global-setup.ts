@@ -15,24 +15,49 @@ async function globalSetup() {
   // Set E2E test database URL - this persists for the entire test run
   process.env.DATABASE_URL = `file:${testDbPath}`
 
+  // Set Prisma consent for test environment
+  process.env.PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION = 'yes'
+
   try {
-    // Remove existing test database if it exists
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath)
-      console.log('🗑️  Removed existing E2E test database')
+    const dbExists = fs.existsSync(testDbPath)
+
+    if (!dbExists) {
+      // Only create database if it doesn't exist
+      console.log('📋 Creating E2E test database...')
+
+      // Generate Prisma client
+      console.log('⚙️  Generating Prisma client...')
+      await execAsync('npx prisma generate')
+
+      // Push database schema
+      await execAsync('npx prisma db push --force-reset')
+
+      // Seed the database
+      console.log('🌱 Seeding E2E test database...')
+      await execAsync('npm run db:seed')
+    } else {
+      // Database exists - just clean up test data
+      console.log('🧹 Cleaning up test bills from previous run...')
+      const { PrismaClient } = await import('@prisma/client')
+      const prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: `file:${testDbPath}`
+          }
+        }
+      })
+
+      try {
+        await prisma.bill.deleteMany({
+          where: {
+            billReference: { startsWith: 'TEST-BILL-' }
+          }
+        })
+        console.log('✅ Test bills cleaned up')
+      } finally {
+        await prisma.$disconnect()
+      }
     }
-
-    // Generate Prisma client
-    console.log('⚙️  Generating Prisma client...')
-    await execAsync('npx prisma generate')
-
-    // Push database schema
-    console.log('📋 Creating E2E test database schema...')
-    await execAsync('npx prisma db push --force-reset')
-
-    // Seed the database
-    console.log('🌱 Seeding E2E test database...')
-    await execAsync('npm run db:seed')
 
     console.log('✅ E2E test environment ready!')
 

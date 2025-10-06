@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { BillFormSchema, BillFormData } from './validation'
 
-// Enhanced form validation utilities specifically for the BillForm component
+// Form validation types
 export interface FormFieldError {
   message: string
   type?: string

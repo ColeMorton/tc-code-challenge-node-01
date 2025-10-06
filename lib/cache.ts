@@ -3,10 +3,23 @@
  * Provides caching for user bill counts and assignment capacity
  */
 
-interface CacheEntry<T> {
-  data: T
-  timestamp: number
-  ttl: number
+import { CacheEntry } from '@/app/lib/definitions'
+
+// Re-export types that are specific to cache operations
+export interface UserCapacity {
+  userId: string
+  userName: string
+  userEmail: string
+  currentAssignedCount: number
+  availableSlots: number
+  capacityStatus: string
+}
+
+export interface AssignmentCapacityCheck {
+  canAssign: boolean
+  reason?: string
+  currentCount: number
+  availableSlots: number
 }
 
 class MemoryCache {

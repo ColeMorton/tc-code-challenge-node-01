@@ -33,3 +33,11 @@ jest.mock('next/navigation', () => ({
   useSearchParams: jest.fn(() => new URLSearchParams()),
   useParams: jest.fn(() => ({}))
 }))
+
+// Mock window.scrollTo for tests (only in jsdom environment)
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'scrollTo', {
+    value: jest.fn(),
+    writable: true
+  })
+}
