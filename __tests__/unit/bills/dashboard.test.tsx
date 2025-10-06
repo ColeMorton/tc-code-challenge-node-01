@@ -18,6 +18,8 @@ const mockBills = [
     submittedAt: new Date('2024-01-16T10:00:00Z'),
     approvedAt: null,
     onHoldAt: null,
+    billStageId: 'submitted',
+    assignedToId: 'user1',
     assignedTo: { id: 'user1', name: 'John Doe', email: 'john@example.com' },
     billStage: { id: 'submitted', label: 'Submitted', colour: '#3B82F6' }
   },
@@ -28,6 +30,8 @@ const mockBills = [
     submittedAt: null,
     approvedAt: null,
     onHoldAt: null,
+    billStageId: 'draft',
+    assignedToId: null,
     assignedTo: null,
     billStage: { id: 'draft', label: 'Draft', colour: '#6B7280' }
   }
@@ -185,6 +189,8 @@ describe('BillsDashboard', () => {
         submittedAt: null,
         approvedAt: new Date('2024-01-21'),
         onHoldAt: null,
+        billStageId: 'approved',
+        assignedToId: null,
         assignedTo: null,
         billStage: { id: 'approved', label: 'Approved', colour: '#10B981' }
       }

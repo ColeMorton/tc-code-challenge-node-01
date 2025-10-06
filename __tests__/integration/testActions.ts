@@ -4,14 +4,14 @@
  */
 
 import { testPrisma } from './testUtils'
-import { 
-  CreateBillInput, 
-  ValidationResult, 
-  AssignBillInput, 
-  AssignBillResult 
+import {
+  CreateBillInput,
+  SimpleValidationResult,
+  AssignBillInput,
+  AssignBillResult
 } from '@/app/lib/definitions'
 
-export async function validateBillReference(billReference: string): Promise<ValidationResult> {
+export async function validateBillReference(billReference: string): Promise<SimpleValidationResult> {
   if (!billReference.trim()) {
     return { isValid: true }
   }
@@ -139,7 +139,6 @@ export async function assignBillAction(input: AssignBillInput): Promise<AssignBi
 
     return {
       success: true,
-      message: 'Bill assigned successfully',
       bill: {
         id: result.id,
         billReference: result.billReference,
