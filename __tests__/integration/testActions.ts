@@ -165,7 +165,15 @@ export async function assignBillAction(input: AssignBillInput): Promise<AssignBi
     return {
       success: true,
       message: 'Bill assigned successfully',
-      bill: updatedBill
+      bill: {
+        id: updatedBill.id,
+        billReference: updatedBill.billReference,
+        billDate: updatedBill.billDate,
+        assignedToId: updatedBill.assignedToId,
+        billStageId: updatedBill.billStageId,
+        assignedTo: updatedBill.assignedTo || undefined,
+        billStage: updatedBill.billStage
+      }
     }
   } catch (error) {
     return {

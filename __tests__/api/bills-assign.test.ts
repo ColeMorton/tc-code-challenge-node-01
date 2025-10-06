@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/bills/assign/route'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 import type { MockPrismaClient } from '../types/mocks'
 
 // Mock Prisma
-jest.mock('@/lib/prisma', () => ({
+jest.mock('@/app/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),

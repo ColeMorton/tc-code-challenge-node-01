@@ -1,9 +1,9 @@
 import { GET } from '@/app/api/bills/route'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 import type { MockPrismaClient } from '../types/mocks'
 
 // Mock Prisma
-jest.mock('@/lib/prisma', () => ({
+jest.mock('@/app/lib/prisma', () => ({
   prisma: {
     bill: {
       findMany: jest.fn(),
