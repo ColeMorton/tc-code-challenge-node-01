@@ -34,8 +34,8 @@ export function validateField(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
-        message: error.errors[0]?.message || 'Invalid value',
-        type: error.errors[0]?.code
+        message: error.issues[0]?.message || 'Invalid value',
+        type: error.issues[0]?.code
       }
     }
     return { message: 'Validation error' }

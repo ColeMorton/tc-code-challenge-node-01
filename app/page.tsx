@@ -4,12 +4,16 @@ export default function Home() {
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900"></div>
       
       <div className="relative z-10 min-h-screen flex items-center justify-center">
-        <main className="text-center space-y-8 px-8">
+        <main id="main-content" className="text-center space-y-8 px-8" role="main" aria-labelledby="main-heading">
           <div className="relative pb-4">
-            <h1 data-testid="home-title" className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent animate-pulse pb-4">
+            <h1 
+              id="main-heading"
+              data-testid="home-title" 
+              className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent animate-pulse pb-4"
+            >
               Trilogy Care
             </h1>
-            <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent blur-sm opacity-50 text-6xl md:text-8xl font-bold">
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent blur-sm opacity-50 text-6xl md:text-8xl font-bold" aria-hidden="true">
               Trilogy Care
             </div>
           </div>

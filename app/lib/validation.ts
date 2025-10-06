@@ -74,7 +74,7 @@ export function validateWithZod<T>(
   
   return {
     success: false,
-    errors: result.error.flatten().fieldErrors
+    errors: result.error.flatten().fieldErrors as Record<string, string[]>
   }
 }
 

@@ -82,23 +82,42 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
   return (
     <div>
       {error && (
-        <div data-testid="error-message" className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div 
+          data-testid="error-message" 
+          className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md" 
+          role="alert"
+          aria-live="assertive"
+        >
           {error}
         </div>
       )}
 
-      <div data-testid="bills-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-6">
+      <div 
+        data-testid="bills-grid" 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-6"
+        role="region"
+        aria-label="Bills organized by stage"
+      >
         {stageOrder.map((stageLabel) => {
           const stageBills = groupedBills[stageLabel] || []
           const stageColor = stageBills[0]?.billStage.colour || '#9CA3AF'
 
           return (
-            <div key={stageLabel} data-testid={`stage-column-${stageLabel.toLowerCase().replace(' ', '-')}`} className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div 
+              key={stageLabel} 
+              data-testid={`stage-column-${stageLabel.toLowerCase().replace(' ', '-')}`} 
+              className="bg-white rounded-lg shadow-sm border border-gray-200"
+              role="group"
+              aria-labelledby={`stage-${stageLabel.toLowerCase().replace(' ', '-')}-header`}
+            >
               <div
                 className="px-4 py-3 rounded-t-lg border-b border-gray-200"
                 style={{ backgroundColor: stageColor }}
               >
-                <h2 className="font-semibold text-white text-center">
+                <h2 
+                  id={`stage-${stageLabel.toLowerCase().replace(' ', '-')}-header`}
+                  className="font-semibold text-white text-center"
+                >
                   {stageLabel} ({stageBills.length})
                 </h2>
               </div>
@@ -115,8 +134,13 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
                       key={bill.id}
                       data-testid={`bill-card-${bill.billReference}`}
                       className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
+                      role="article"
+                      aria-labelledby={`bill-${bill.id}-title`}
                     >
-                      <div className="font-medium text-gray-900 mb-2">
+                      <div 
+                        id={`bill-${bill.id}-title`}
+                        className="font-medium text-gray-900 mb-2"
+                      >
                         {bill.billReference}
                       </div>
 
@@ -151,7 +175,11 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
                       {canAssign && (
                         <div className="mt-3 pt-3 border-t border-gray-200">
                           <div className="space-y-2">
+                            <label htmlFor={`assignment-${bill.id}`} className="sr-only">
+                              Assign {bill.billReference} to user
+                            </label>
                             <select
+                              id={`assignment-${bill.id}`}
                               data-testid={`assignment-select-${bill.billReference}`}
                               className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               onChange={(e) => {
@@ -162,6 +190,8 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
                               }}
                               disabled={isAssigning}
                               defaultValue=""
+                              aria-label={`Assign ${bill.billReference} to user`}
+                              aria-describedby={isAssigning ? `assigning-${bill.id}` : undefined}
                             >
                               <option value="" disabled>
                                 {isAssigning ? 'Assigning...' : 'Assign to user...'}
@@ -172,6 +202,11 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
                                 </option>
                               ))}
                             </select>
+                            {isAssigning && (
+                              <div id={`assigning-${bill.id}`} className="sr-only" aria-live="polite">
+                                Assigning bill {bill.billReference}, please wait...
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -180,7 +215,7 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
                 })}
 
                 {stageBills.length === 0 && (
-                  <div className="text-center text-gray-500 py-8">
+                  <div className="text-center text-gray-500 py-8" aria-live="polite">
                     No bills in this stage
                   </div>
                 )}
