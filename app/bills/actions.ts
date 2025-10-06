@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/app/lib/prisma'
 import { monitorBillAssignment } from '@/lib/monitoring'
+import { validateCreateBillInput, validateAssignBillInput } from '@/app/lib/validation'
 
 export interface CreateBillInput {
   billReference: string
@@ -38,17 +39,19 @@ export async function validateBillReference(billReference: string): Promise<Vali
 }
 
 export async function createBill(input: CreateBillInput) {
-  if (!input.billReference.trim()) {
-    throw new Error('Bill reference is required')
+  // Validate input with Zod
+  const validation = validateCreateBillInput(input)
+  if (!validation.success) {
+    const errorMessages = Object.values(validation.errors || {}).flat()
+    throw new Error(`Validation failed: ${errorMessages.join(', ')}`)
   }
 
-  if (!input.billDate) {
-    throw new Error('Bill date is required')
-  }
+  const validatedInput = validation.data!
 
-  const validation = await validateBillReference(input.billReference)
-  if (!validation.isValid) {
-    throw new Error(validation.message || 'Invalid bill reference')
+  // Additional async validation for bill reference uniqueness
+  const referenceValidation = await validateBillReference(validatedInput.billReference)
+  if (!referenceValidation.isValid) {
+    throw new Error(referenceValidation.message || 'Invalid bill reference')
   }
 
   const draftStage = await prisma.billStage.findFirst({
@@ -61,9 +64,9 @@ export async function createBill(input: CreateBillInput) {
 
   const bill = await prisma.bill.create({
     data: {
-      billReference: input.billReference,
-      billDate: new Date(input.billDate),
-      assignedToId: input.assignedToId || null,
+      billReference: validatedInput.billReference,
+      billDate: new Date(validatedInput.billDate),
+      assignedToId: validatedInput.assignedToId || null,
       billStageId: draftStage.id
     }
   })
@@ -129,50 +132,24 @@ function createDetailedError(
 const MAX_RETRIES = 3
 
 /**
- * Enhanced validation for bill assignment
- */
-function validateBillAssignment(input: AssignBillInput): { isValid: boolean; errors?: string[] } {
-  const errors: string[] = []
-
-  if (!input.userId?.trim()) {
-    errors.push('User ID is required')
-  }
-
-  if (!input.billId?.trim()) {
-    errors.push('Bill ID is required')
-  }
-
-  // CUID format validation - disabled for testing
-  // if (input.userId && !/^c[a-z0-9]{24}$/.test(input.userId)) {
-  //   errors.push('Invalid user ID format')
-  // }
-
-  // if (input.billId && !/^c[a-z0-9]{24}$/.test(input.billId)) {
-  //   errors.push('Invalid bill ID format')
-  // }
-
-  return {
-    isValid: errors.length === 0,
-    errors: errors.length > 0 ? errors : undefined
-  }
-}
-
-/**
  * Optimized bill assignment with single query and better error handling
  */
 export const assignBillAction = monitorBillAssignment(async (input: AssignBillInput): Promise<AssignBillResult> => {
   const startTime = Date.now()
   
-  // Enhanced validation
-  const validation = validateBillAssignment(input)
-  if (!validation.isValid) {
+  // Validate input with Zod
+  const validation = validateAssignBillInput(input)
+  if (!validation.success) {
+    const errorMessages = Object.values(validation.errors || {}).flat()
     return { 
       success: false, 
-      error: `Validation failed: ${validation.errors?.join(', ')}` 
+      error: `Validation failed: ${errorMessages.join(', ')}` 
     }
   }
 
-  const { userId, billId } = input
+  const validatedInput = validation.data!
+
+  const { userId, billId } = validatedInput
 
   // Check cache first for quick validation
   const { canUserBeAssignedBillCached, invalidateUserCache } = await import('@/lib/cache')

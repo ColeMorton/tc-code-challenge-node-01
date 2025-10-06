@@ -4,6 +4,15 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBill, validateBillReference } from '@/app/bills/actions'
+import { 
+  FormValidationState, 
+  initialValidationState, 
+  validateForm, 
+  getFieldError,
+  hasFieldError,
+  FieldValidators
+} from '@/app/lib/form-validation'
+import { BillFormData } from '@/app/lib/validation'
 
 interface User {
   id: string
@@ -11,13 +20,7 @@ interface User {
   email: string
 }
 
-interface FormData {
-  billReference: string
-  billDate: string
-  assignedToId: string
-}
-
-interface ValidationState {
+interface AsyncValidationState {
   billReference: {
     isValid: boolean
     isChecking: boolean
@@ -32,12 +35,13 @@ interface BillFormProps {
 export default function BillForm({ users }: BillFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<BillFormData>({
     billReference: '',
     billDate: '',
     assignedToId: ''
   })
-  const [validation, setValidation] = useState<ValidationState>({
+  const [validation, setValidation] = useState<FormValidationState>(initialValidationState)
+  const [asyncValidation, setAsyncValidation] = useState<AsyncValidationState>({
     billReference: {
       isValid: true,
       isChecking: false,
@@ -50,74 +54,104 @@ export default function BillForm({ users }: BillFormProps) {
 
   const handleValidateBillReference = async (billReference: string) => {
     if (!billReference.trim()) {
-      setValidation(prev => ({
-        ...prev,
+      setAsyncValidation({
         billReference: {
           isValid: true,
           isChecking: false,
           message: ''
         }
-      }))
+      })
       return
     }
 
-    setValidation(prev => ({
-      ...prev,
+    setAsyncValidation({
       billReference: {
         isValid: true,
         isChecking: true,
         message: 'Checking...'
       }
-    }))
+    })
 
     try {
       const result = await validateBillReference(billReference)
 
-      setValidation(prev => ({
-        ...prev,
+      setAsyncValidation({
         billReference: {
           isValid: result.isValid,
           isChecking: false,
           message: result.message || ''
         }
-      }))
+      })
     } catch {
-      setValidation(prev => ({
-        ...prev,
+      setAsyncValidation({
         billReference: {
           isValid: false,
           isChecking: false,
           message: 'Error checking bill reference'
         }
-      }))
+      })
     }
   }
 
   const handleBillReferenceChange = (value: string) => {
-    setFormData(prev => ({ ...prev, billReference: value }))
+    const newFormData = { ...formData, billReference: value }
+    setFormData(newFormData)
+
+    // Validate field immediately with Zod
+    const fieldError = FieldValidators.billReference(value)
+    setValidation(prev => ({
+      ...prev,
+      billReference: fieldError,
+      isValid: fieldError === null && prev.billDate === null && prev.assignedToId === null
+    }))
 
     // Clear existing timeout
     if (validationTimeoutRef.current) {
       clearTimeout(validationTimeoutRef.current)
     }
 
-    // Only validate if the value is not empty
-    if (value.trim()) {
-      // Set new timeout
+    // Only validate asynchronously if the value is not empty and passes basic validation
+    if (value.trim() && !fieldError) {
+      // Set new timeout for async validation
       validationTimeoutRef.current = setTimeout(() => {
         handleValidateBillReference(value)
       }, 500)
     } else {
-      // Reset validation state for empty values
-      setValidation(prev => ({
-        ...prev,
+      // Reset async validation state for empty or invalid values
+      setAsyncValidation({
         billReference: {
           isValid: true,
           isChecking: false,
           message: ''
         }
-      }))
+      })
     }
+  }
+
+  const handleBillDateChange = (value: string) => {
+    const newFormData = { ...formData, billDate: value }
+    setFormData(newFormData)
+
+    // Validate field immediately with Zod
+    const fieldError = FieldValidators.billDate(value)
+    setValidation(prev => ({
+      ...prev,
+      billDate: fieldError,
+      isValid: prev.billReference === null && fieldError === null && prev.assignedToId === null
+    }))
+  }
+
+  const handleAssignedToChange = (value: string) => {
+    const newFormData = { ...formData, assignedToId: value }
+    setFormData(newFormData)
+
+    // Validate field immediately with Zod (optional field)
+    const fieldError = FieldValidators.assignedToId()
+    setValidation(prev => ({
+      ...prev,
+      assignedToId: fieldError,
+      isValid: prev.billReference === null && prev.billDate === null && fieldError === null
+    }))
   }
 
   // Cleanup timeout on unmount
@@ -133,18 +167,26 @@ export default function BillForm({ users }: BillFormProps) {
     e.preventDefault()
     setError(null)
 
-    if (!formData.billReference.trim()) {
-      setError('Bill reference is required')
+    // Validate the entire form
+    const formValidation = validateForm(formData)
+    setValidation(formValidation)
+
+    // Check if there are any validation errors
+    if (!formValidation.isValid) {
+      const firstError = Object.values(formValidation).find(error => error && typeof error === 'object' && 'message' in error)
+      setError(firstError ? firstError.message : 'Please fix the form errors')
       return
     }
 
-    if (!formData.billDate) {
-      setError('Bill date is required')
-      return
-    }
-
-    if (!validation.billReference.isValid) {
+    // Check async validation for bill reference
+    if (!asyncValidation.billReference.isValid) {
       setError('Please fix the bill reference error')
+      return
+    }
+
+    // Check if async validation is still in progress
+    if (asyncValidation.billReference.isChecking) {
+      setError('Please wait for bill reference validation to complete')
       return
     }
 
@@ -196,20 +238,29 @@ export default function BillForm({ users }: BillFormProps) {
             value={formData.billReference}
             onChange={(e) => handleBillReferenceChange(e.target.value)}
             className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-              validation.billReference.isValid ? 'border-gray-300' : 'border-red-300'
+              hasFieldError(validation, 'billReference') || !asyncValidation.billReference.isValid
+                ? 'border-red-300' 
+                : 'border-gray-300'
             }`}
             placeholder="e.g., BILL-2024-001"
             required
           />
-          {validation.billReference.message && (
+          {/* Show Zod validation error */}
+          {getFieldError(validation, 'billReference') && (
+            <p className="mt-1 text-sm text-red-600">
+              {getFieldError(validation, 'billReference')}
+            </p>
+          )}
+          {/* Show async validation message */}
+          {asyncValidation.billReference.message && !getFieldError(validation, 'billReference') && (
             <p className={`mt-1 text-sm ${
-              validation.billReference.isChecking
+              asyncValidation.billReference.isChecking
                 ? 'text-gray-500'
-                : validation.billReference.isValid
+                : asyncValidation.billReference.isValid
                 ? 'text-green-600'
                 : 'text-red-600'
             }`}>
-              {validation.billReference.message}
+              {asyncValidation.billReference.message}
             </p>
           )}
         </div>
@@ -223,10 +274,17 @@ export default function BillForm({ users }: BillFormProps) {
             id="billDate"
             data-testid="bill-date-input"
             value={formData.billDate}
-            onChange={(e) => setFormData(prev => ({ ...prev, billDate: e.target.value }))}
-            className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(e) => handleBillDateChange(e.target.value)}
+            className={`mt-1 block w-full px-3 py-2 text-gray-700 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              hasFieldError(validation, 'billDate') ? 'border-red-300' : 'border-gray-300'
+            }`}
             required
           />
+          {getFieldError(validation, 'billDate') && (
+            <p className="mt-1 text-sm text-red-600">
+              {getFieldError(validation, 'billDate')}
+            </p>
+          )}
         </div>
 
         <div>
@@ -237,8 +295,10 @@ export default function BillForm({ users }: BillFormProps) {
             id="assignedToId"
             data-testid="assigned-to-select"
             value={formData.assignedToId}
-            onChange={(e) => setFormData(prev => ({ ...prev, assignedToId: e.target.value }))}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(e) => handleAssignedToChange(e.target.value)}
+            className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              hasFieldError(validation, 'assignedToId') ? 'border-red-300' : 'border-gray-300'
+            }`}
           >
             <option value="">Leave unassigned</option>
             {users.map((user) => (
@@ -247,13 +307,18 @@ export default function BillForm({ users }: BillFormProps) {
               </option>
             ))}
           </select>
+          {getFieldError(validation, 'assignedToId') && (
+            <p className="mt-1 text-sm text-red-600">
+              {getFieldError(validation, 'assignedToId')}
+            </p>
+          )}
         </div>
 
         <div className="flex space-x-4">
           <button
             type="submit"
             data-testid="submit-button"
-            disabled={isPending || validation.billReference.isChecking}
+            disabled={isPending || asyncValidation.billReference.isChecking}
             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             {isPending ? 'Creating...' : 'Create Bill'}
