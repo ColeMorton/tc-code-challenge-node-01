@@ -20,7 +20,7 @@
     "test:e2e:critical": "PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes playwright test critical-flows.e2e.spec.ts",
     "test:e2e:cross-browser": "CROSS_BROWSER=true PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes playwright test",
     "test:all": "PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes npm run test && npm run test:e2e",
-    "test:combined": "PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes npm run test:unit && npm run test:api",
+    "test:combined": "PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes npm run test:unit && npm run test:integration",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

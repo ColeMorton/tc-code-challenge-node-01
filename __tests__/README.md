@@ -1,19 +1,19 @@
-# Integration Testing Implementation
+# Testing Implementation
 
 ## Overview
-This project now includes a comprehensive multi-layer testing strategy with both unit tests (mocked) and integration tests (real database) to ensure code quality and catch real-world issues.
+This project includes a streamlined testing strategy with unit tests (mocked) and integration tests (real database) focused on the core requirements for the 3-hour coding challenge.
 
 ## Test Architecture
 
-### 1. **Unit Tests** (`__tests__/api/`)
+### 1. **Unit Tests** (`__tests__/unit/`)
 - **Fast execution** with mocked dependencies
-- **44 test cases** covering all API endpoint logic
-- **Isolated testing** of business logic without database
+- **66 test cases** covering all business logic
+- **Isolated testing** of components and server actions without database
 - **Mock-based** Prisma client for consistent behavior
 
 ### 2. **Integration Tests** (`__tests__/integration/`)
 - **Real database testing** with SQLite test database
-- **9 comprehensive test cases** covering critical workflows
+- **8 focused test cases** covering core API functionality
 - **Database persistence validation**
 - **Business rule enforcement testing**
 
@@ -27,34 +27,35 @@ This project now includes a comprehensive multi-layer testing strategy with both
 
 ### Jest Configuration
 ```javascript
-// Multi-project setup in jest.config.js
-projects: [
-  {
-    displayName: 'unit',        // Fast mocked tests
-    testMatch: ['**/__tests__/api/**/*.(test|spec).(ts|tsx)']
-  },
-  {
-    displayName: 'integration', // Real database tests
-    testMatch: ['**/__tests__/integration/**/*.(test|spec).(ts|tsx)']
-  }
-]
+// Separate configs for different test types
+- jest.frontend.config.js     // Unit tests for components and actions
+- jest.integration.config.js  // Integration tests with real database
+- jest.config.js             // Main config for all tests
 ```
 
 ## Running Tests
 
 ### All Tests
 ```bash
-npm test                    # Run both unit and integration tests
+npm test                    # Run unit tests
+npm run test:combined       # Run both unit and integration tests
 ```
 
 ### Unit Tests Only
 ```bash
-npm run test:unit          # Fast execution, mocked dependencies
+npm run test:unit           # Run unit tests only
 ```
 
 ### Integration Tests Only
 ```bash
-npm run test:integration   # Real database, comprehensive validation
+npm run test:integration    # Run integration tests only
+```
+
+### E2E Tests
+```bash
+npm run test:e2e           # Run end-to-end tests
+npm run test:e2e:smoke     # Run smoke tests only
+npm run test:e2e:critical  # Run critical flow tests only
 ```
 
 ### Watch Mode

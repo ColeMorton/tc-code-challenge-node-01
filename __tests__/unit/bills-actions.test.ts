@@ -1,17 +1,24 @@
-import { validateBillReference, createBill } from '@/app/bills/actions'
+import { validateBillReference, createBill, assignBillAction } from '@/app/bills/actions'
 import { prisma } from '@/lib/prisma'
 import type { MockPrismaClient } from '../types/mocks'
+import { revalidatePath } from 'next/cache'
 
 // Mock Prisma
 jest.mock('@/lib/prisma', () => ({
   prisma: {
+    user: {
+      findUnique: jest.fn(),
+    },
     bill: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
     },
     billStage: {
       findFirst: jest.fn(),
-    }
+    },
+    $transaction: jest.fn(),
   }
 }))
 
@@ -21,6 +28,7 @@ jest.mock('next/cache', () => ({
 }))
 
 const mockPrisma = prisma as unknown as MockPrismaClient
+const mockRevalidatePath = revalidatePath as jest.MockedFunction<typeof revalidatePath>
 
 describe('Bills Server Actions', () => {
   beforeEach(() => {
@@ -201,6 +209,276 @@ describe('Bills Server Actions', () => {
       mockPrisma.billStage.findFirst.mockResolvedValue(null)
 
       await expect(createBill(input)).rejects.toThrow('Draft stage not found')
+    })
+  })
+
+  describe('assignBillAction', () => {
+    beforeEach(() => {
+      mockPrisma.$transaction = jest.fn().mockImplementation(async (callback) => {
+        return callback(mockPrisma)
+      })
+    })
+
+    it('should assign a bill to a user successfully', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        submittedAt: null,
+        assignedToId: null
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(2)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+      mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'user1' })
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(true)
+      expect(mockPrisma.bill.update).toHaveBeenCalledWith({
+        where: { id: 'bill1' },
+        data: { assignedToId: 'user1' }
+      })
+      expect(mockRevalidatePath).toHaveBeenCalledWith('/bills')
+    })
+
+    it('should return error when userId is missing', async () => {
+      const input = { billId: 'bill1', userId: '' }
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('userId is required')
+    })
+
+    it('should return error when billId is missing', async () => {
+      const input = { billId: '', userId: 'user1' }
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('billId is required')
+    })
+
+    it('should return error when user not found', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+
+      mockPrisma.user.findUnique.mockResolvedValue(null)
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('User not found')
+    })
+
+    it('should return error when user already has 3 bills', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(3)
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('User already has the maximum of 3 bills assigned')
+    })
+
+    it('should return error when bill not found', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(1)
+      mockPrisma.bill.findUnique.mockResolvedValue(null)
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Bill not found')
+    })
+
+    it('should return error when bill is already assigned', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        submittedAt: null,
+        assignedToId: 'user2'
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(1)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Bill is already assigned')
+    })
+
+    it('should return error when bill is not in Draft or Submitted stage', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'approved-stage',
+        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' },
+        submittedAt: null,
+        assignedToId: null
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(1)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Bill must be in Draft or Submitted stage to be assigned')
+    })
+
+    it('should set submittedAt timestamp when assigning Submitted bill without timestamp', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'submitted-stage',
+        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
+        submittedAt: null,
+        assignedToId: null
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(1)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+      mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'user1', submittedAt: new Date() })
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(true)
+      expect(mockPrisma.bill.update).toHaveBeenCalledWith({
+        where: { id: 'bill1' },
+        data: {
+          assignedToId: 'user1',
+          submittedAt: expect.any(Date)
+        }
+      })
+    })
+
+    it('should not set submittedAt when already exists', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const existingDate = new Date('2024-01-01')
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'submitted-stage',
+        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
+        submittedAt: existingDate,
+        assignedToId: null
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(1)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+      mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'user1' })
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(true)
+      expect(mockPrisma.bill.update).toHaveBeenCalledWith({
+        where: { id: 'bill1' },
+        data: { assignedToId: 'user1' }
+      })
+    })
+
+    it('should retry on race condition and succeed', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        submittedAt: null,
+        assignedToId: null
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+      mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'user1' })
+
+      let callCount = 0
+      mockPrisma.bill.count.mockImplementation(async () => {
+        callCount++
+        if (callCount === 2) return 4
+        return 2
+      })
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(true)
+      expect(mockPrisma.bill.count.mock.calls.length).toBeGreaterThanOrEqual(4)
+    })
+
+    it('should fail after max retries on persistent race condition', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+      const mockBill = {
+        id: 'bill1',
+        billReference: 'BILL-001',
+        billDate: new Date('2024-01-01'),
+        billStageId: 'draft-stage',
+        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        submittedAt: null,
+        assignedToId: null
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
+      mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'user1' })
+
+      let callCount = 0
+      mockPrisma.bill.count.mockImplementation(async () => {
+        callCount++
+        if (callCount % 2 === 0) return 4
+        return 2
+      })
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('concurrent updates')
+    })
+
+    it('should handle database errors', async () => {
+      const input = { billId: 'bill1', userId: 'user1' }
+      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      mockPrisma.bill.count.mockResolvedValue(1)
+      mockPrisma.bill.findUnique.mockRejectedValue(new Error('Database error'))
+
+      const result = await assignBillAction(input)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Database error')
     })
   })
 })

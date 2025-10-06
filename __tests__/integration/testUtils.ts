@@ -1,80 +1,83 @@
 import { PrismaClient } from '@prisma/client'
 
-// Create a separate Prisma client for integration tests
+// Create a separate Prisma client for integration tests with optimized connection settings
 export const testPrisma = new PrismaClient({
   datasources: {
     db: {
       url: 'file:./test.db'
     }
-  }
+  },
+  // Optimize for testing environment
+  log: process.env.NODE_ENV === 'test' ? ['error'] : ['query', 'info', 'warn', 'error'],
 })
 
 /**
  * Reset database to clean state for test isolation
- * This function clears all data and reseeds the database
+ * This function uses a lightweight approach to avoid database locks
  */
 export async function resetDatabase() {
-  // Only clear bills to reset test state
-  // Users and stages persist across tests for performance
-  await testPrisma.bill.deleteMany()
-
-  // Ensure required data exists (idempotent)
-  await seedRequiredData()
+  try {
+    // Clear only bills to avoid foreign key issues
+    await testPrisma.bill.deleteMany()
+    
+    // Ensure required test data exists (idempotent)
+    await seedRequiredData()
+  } catch (error) {
+    console.error('Database reset failed:', error)
+    throw error
+  }
 }
 
 /**
  * Seed the database with required test data (idempotent)
+ * Uses simple upsert operations to avoid race conditions
  */
 export async function seedRequiredData() {
-  // Create bill stages only if they don't exist
-  const billStageData = [
-    { label: 'Draft', colour: '#9CA3AF' },
-    { label: 'Submitted', colour: '#3B82F6' },
-    { label: 'Approved', colour: '#10B981' },
-    { label: 'Paying', colour: '#F59E0B' },
-    { label: 'On Hold', colour: '#EF4444' },
-    { label: 'Rejected', colour: '#DC2626' },
-    { label: 'Paid', colour: '#059669' }
-  ]
+  try {
+    // Create bill stages using upsert to handle race conditions
+    const billStageData = [
+      { label: 'Draft', colour: '#9CA3AF' },
+      { label: 'Submitted', colour: '#3B82F6' },
+      { label: 'Approved', colour: '#10B981' },
+      { label: 'Paying', colour: '#F59E0B' },
+      { label: 'On Hold', colour: '#EF4444' },
+      { label: 'Rejected', colour: '#DC2626' },
+      { label: 'Paid', colour: '#059669' }
+    ]
 
-  const stages = []
-  for (const stageData of billStageData) {
-    const existing = await testPrisma.billStage.findUnique({
-      where: { label: stageData.label }
-    })
-    if (!existing) {
-      const created = await testPrisma.billStage.create({ data: stageData })
-      stages.push(created)
-    } else {
-      stages.push(existing)
+    const stages = []
+    for (const stageData of billStageData) {
+      const stage = await testPrisma.billStage.upsert({
+        where: { label: stageData.label },
+        update: stageData,
+        create: stageData
+      })
+      stages.push(stage)
     }
-  }
 
-  // Create test users only if they don't exist
-  const userData = [
-    { name: 'Test User 1', email: 'test1@example.com' },
-    { name: 'Test User 2', email: 'test2@example.com' },
-    { name: 'Test User 3', email: 'test3@example.com' },
-    { name: 'Test User 4', email: 'test4@example.com' },
-    { name: 'Test User 5', email: 'test5@example.com' }
-  ]
+    // Create test users using upsert to handle race conditions
+    const userData = [
+      { name: 'Test User 1', email: 'test1@example.com' },
+      { name: 'Test User 2', email: 'test2@example.com' },
+      { name: 'Test User 3', email: 'test3@example.com' },
+      { name: 'Test User 4', email: 'test4@example.com' },
+      { name: 'Test User 5', email: 'test5@example.com' }
+    ]
 
-  const users = []
-  for (const user of userData) {
-    const existing = await testPrisma.user.findUnique({
-      where: { email: user.email }
-    })
-    if (!existing) {
-      const created = await testPrisma.user.create({ data: user })
-      users.push(created)
-    } else {
-      users.push(existing)
+    const users = []
+    for (const user of userData) {
+      const createdUser = await testPrisma.user.upsert({
+        where: { email: user.email },
+        update: user,
+        create: user
+      })
+      users.push(createdUser)
     }
-  }
 
-  return {
-    stages,
-    users
+    return { stages, users }
+  } catch (error) {
+    console.error('Seed data creation failed:', error)
+    throw error
   }
 }
 
@@ -84,7 +87,8 @@ export async function seedRequiredData() {
 export async function createTestBill(
   billReference: string,
   billStageLabel: string = 'Draft',
-  assignedToId?: string
+  assignedToId?: string,
+  billDate?: Date
 ) {
   const stage = await testPrisma.billStage.findFirst({
     where: { label: billStageLabel }
@@ -106,7 +110,7 @@ export async function createTestBill(
 
   const billData: BillCreateData = {
     billReference,
-    billDate: new Date(),
+    billDate: billDate || new Date(),
     billStageId: stage.id
   }
 
