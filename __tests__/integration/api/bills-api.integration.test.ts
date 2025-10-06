@@ -130,7 +130,7 @@ describe('Bills API Integration Tests', () => {
         userId: user.id
       })
       expect(result.success).toBe(false)
-      expect(result.message).toBe('User has reached the maximum limit of 3 assigned bills')
+      expect(result.error).toBe('User has reached the maximum limit of 3 assigned bills')
     })
 
     it('should only assign bills in assignable stages', async () => {
@@ -161,7 +161,7 @@ describe('Bills API Integration Tests', () => {
           userId: user.id
         })
         expect(result.success).toBe(false)
-        expect(result.message).toBe(`Bills in ${stage} stage cannot be assigned`)
+        expect(result.error).toBe(`Bills in ${stage} stage cannot be assigned`)
       }
     })
 
@@ -176,7 +176,7 @@ describe('Bills API Integration Tests', () => {
         userId: 'non-existent-user'
       })
       expect(result1.success).toBe(false)
-      expect(result1.message).toBe('User not found')
+      expect(result1.error).toBe('User not found')
 
       // Non-existent bill
       const result2 = await assignBillAction({
@@ -184,7 +184,7 @@ describe('Bills API Integration Tests', () => {
         userId: user.id
       })
       expect(result2.success).toBe(false)
-      expect(result2.message).toBe('Bill not found')
+      expect(result2.error).toBe('Bill not found')
     })
   })
 })

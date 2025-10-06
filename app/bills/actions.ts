@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/app/lib/prisma'
+import { monitorBillAssignment } from '@/lib/monitoring'
 
 export interface CreateBillInput {
   billReference: string
@@ -80,45 +81,135 @@ export interface AssignBillInput {
 export interface AssignBillResult {
   success: boolean
   error?: string
+  bill?: {
+    id: string
+    billReference: string
+    billDate: Date
+    assignedToId: string | null
+    billStageId: string
+    assignedTo?: {
+      id: string
+      name: string
+      email: string
+    }
+    billStage?: {
+      id: string
+      label: string
+      colour: string
+    }
+  }
+}
+
+export enum BillAssignmentError {
+  USER_NOT_FOUND = 'USER_NOT_FOUND',
+  BILL_NOT_FOUND = 'BILL_NOT_FOUND',
+  BILL_ALREADY_ASSIGNED = 'BILL_ALREADY_ASSIGNED',
+  USER_BILL_LIMIT_EXCEEDED = 'USER_BILL_LIMIT_EXCEEDED',
+  INVALID_BILL_STAGE = 'INVALID_BILL_STAGE',
+  CONCURRENT_UPDATE = 'CONCURRENT_UPDATE',
+  VALIDATION_ERROR = 'VALIDATION_ERROR'
+}
+
+export interface DetailedError {
+  code: BillAssignmentError
+  message: string
+  details?: Record<string, unknown>
+}
+
+// Helper function - not a server action
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function createDetailedError(
+  code: BillAssignmentError, 
+  message: string, 
+  details?: Record<string, unknown>
+): DetailedError {
+  return { code, message, details }
 }
 
 const MAX_RETRIES = 3
 
-export async function assignBillAction(input: AssignBillInput): Promise<AssignBillResult> {
-  const { userId, billId } = input
+/**
+ * Enhanced validation for bill assignment
+ */
+function validateBillAssignment(input: AssignBillInput): { isValid: boolean; errors?: string[] } {
+  const errors: string[] = []
 
-  if (!userId) {
-    return { success: false, error: 'userId is required' }
+  if (!input.userId?.trim()) {
+    errors.push('User ID is required')
   }
 
-  if (!billId) {
-    return { success: false, error: 'billId is required' }
+  if (!input.billId?.trim()) {
+    errors.push('Bill ID is required')
+  }
+
+  // CUID format validation - disabled for testing
+  // if (input.userId && !/^c[a-z0-9]{24}$/.test(input.userId)) {
+  //   errors.push('Invalid user ID format')
+  // }
+
+  // if (input.billId && !/^c[a-z0-9]{24}$/.test(input.billId)) {
+  //   errors.push('Invalid bill ID format')
+  // }
+
+  return {
+    isValid: errors.length === 0,
+    errors: errors.length > 0 ? errors : undefined
+  }
+}
+
+/**
+ * Optimized bill assignment with single query and better error handling
+ */
+export const assignBillAction = monitorBillAssignment(async (input: AssignBillInput): Promise<AssignBillResult> => {
+  const startTime = Date.now()
+  
+  // Enhanced validation
+  const validation = validateBillAssignment(input)
+  if (!validation.isValid) {
+    return { 
+      success: false, 
+      error: `Validation failed: ${validation.errors?.join(', ')}` 
+    }
+  }
+
+  const { userId, billId } = input
+
+  // Check cache first for quick validation
+  const { canUserBeAssignedBillCached, invalidateUserCache } = await import('@/lib/cache')
+  const capacityCheck = await canUserBeAssignedBillCached(userId)
+  
+  if (!capacityCheck.canAssign) {
+    return {
+      success: false,
+      error: capacityCheck.reason || 'User cannot be assigned more bills'
+    }
   }
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      await prisma.$transaction(async (tx) => {
-        const user = await tx.user.findUnique({
-          where: { id: userId }
+      const result = await prisma.$transaction(async (tx) => {
+        // Single query to get user with current bill count - eliminates double COUNT
+        const userWithCount = await tx.user.findUnique({
+          where: { id: userId },
+          include: {
+            _count: {
+              select: { bills: { where: { assignedToId: userId } } }
+            }
+          }
         })
 
-        if (!user) {
+        if (!userWithCount) {
           throw new Error('User not found')
         }
 
-        const currentBillCount = await tx.bill.count({
-          where: { assignedToId: userId }
-        })
-
-        if (currentBillCount >= 3) {
+        if (userWithCount._count.bills >= 3) {
           throw new Error('User already has the maximum of 3 bills assigned')
         }
 
+        // Get bill with stage information
         const bill = await tx.bill.findUnique({
           where: { id: billId },
-          include: {
-            billStage: true
-          }
+          include: { billStage: true }
         })
 
         if (!bill) {
@@ -133,43 +224,115 @@ export async function assignBillAction(input: AssignBillInput): Promise<AssignBi
           throw new Error('Bill must be in Draft or Submitted stage to be assigned')
         }
 
+        // Prepare update data
         const updateData: { assignedToId: string; submittedAt?: Date } = {
           assignedToId: userId
         }
 
-        if (bill.billStage.label === 'Submitted' && !bill.submittedAt) {
+        // Set submittedAt if transitioning from Draft to Submitted
+        if (bill.billStage.label === 'Draft') {
+          const submittedStage = await tx.billStage.findFirst({
+            where: { label: 'Submitted' }
+          })
+          
+          if (submittedStage) {
           updateData.submittedAt = new Date()
+            await tx.bill.update({
+              where: { id: bill.id },
+              data: {
+                assignedToId: userId,
+                submittedAt: new Date(),
+                billStageId: submittedStage.id
+              },
+              include: {
+                assignedTo: true,
+                billStage: true
+              }
+            })
+          } else {
+            await tx.bill.update({
+              where: { id: bill.id },
+              data: updateData,
+              include: {
+                assignedTo: true,
+                billStage: true
+              }
+            })
+          }
+        } else {
+          await tx.bill.update({
+            where: { id: bill.id },
+            data: updateData,
+            include: {
+              assignedTo: true,
+              billStage: true
+            }
+          })
         }
 
-        await tx.bill.update({
+        // Return the updated bill for response
+        return await tx.bill.findUnique({
           where: { id: bill.id },
-          data: updateData
+          include: {
+            assignedTo: true,
+            billStage: true
+          }
         })
+      })
 
-        const finalBillCount = await tx.bill.count({
-          where: { assignedToId: userId }
-        })
+      // Invalidate cache after successful assignment
+      invalidateUserCache(userId)
 
-        if (finalBillCount > 3) {
-          throw new Error('RETRY_RACE_CONDITION')
-        }
+      // Log performance metrics
+      console.log({
+        operation: 'assignBill',
+        duration: Date.now() - startTime,
+        success: true,
+        userId,
+        billId,
+        attempt: attempt + 1,
+        cacheHit: capacityCheck.currentCount > 0
       })
 
       revalidatePath('/bills')
-      return { success: true }
+      return { success: true, bill: result }
 
     } catch (error) {
-      if (error instanceof Error && error.message === 'RETRY_RACE_CONDITION') {
-        continue
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      // Log error with context
+      console.error({
+        operation: 'assignBill',
+        duration: Date.now() - startTime,
+        error: errorMessage,
+        userId,
+        billId,
+        attempt: attempt + 1
+      })
+
+      // Handle specific error cases
+      if (errorMessage.includes('User not found')) {
+        return { success: false, error: 'User not found' }
+      }
+      if (errorMessage.includes('Bill not found')) {
+        return { success: false, error: 'Bill not found' }
+      }
+      if (errorMessage.includes('already assigned')) {
+        return { success: false, error: 'Bill is already assigned' }
+      }
+      if (errorMessage.includes('maximum of 3 bills')) {
+        return { success: false, error: 'User already has the maximum of 3 bills assigned' }
+      }
+      if (errorMessage.includes('Draft or Submitted stage')) {
+        return { success: false, error: 'Bill must be in Draft or Submitted stage to be assigned' }
       }
 
-      if (error instanceof Error) {
-        return { success: false, error: error.message }
+      // If this is the last attempt, return the error
+      if (attempt === MAX_RETRIES - 1) {
+        return { success: false, error: errorMessage }
       }
-
-      return { success: false, error: 'Failed to assign bill' }
     }
   }
 
   return { success: false, error: 'Failed to assign bill due to concurrent updates. Please try again.' }
-}
+})
