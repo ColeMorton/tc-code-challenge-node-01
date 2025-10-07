@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import path from 'path'
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -62,7 +63,8 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {
-      DATABASE_URL: 'file:./prisma/test-e2e.db',
+      // Use absolute path to match global setup
+      DATABASE_URL: `file:${path.join(process.cwd(), 'prisma', 'test-e2e.db')}`,
     },
   },
 
