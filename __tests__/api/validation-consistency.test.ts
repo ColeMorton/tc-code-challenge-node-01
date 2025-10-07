@@ -10,7 +10,7 @@ describe('Frontend-Backend Validation Consistency', () => {
   describe('Bill Creation Validation Rules', () => {
     it('should have consistent required field validation', () => {
       // Frontend validation (form-validation.ts):
-      // - billReference required (min 3 chars)
+      // - billReference required (min 5 chars)
       // - billDate required
       // - assignedToId optional
 
@@ -26,13 +26,13 @@ describe('Frontend-Backend Validation Consistency', () => {
     })
 
     it('should document intentional client-server validation differences', () => {
-      // Client: Permissive for UX (3 char min, any characters)
+      // Client: Consistent with server (5 char min, any characters)
       // Server: Strict for security (5 char min, alphanumeric + hyphens only)
 
       const validationStrategy = {
         client: {
           library: 'Native JavaScript',
-          billReferenceMin: 3,
+          billReferenceMin: 5,
           billReferenceRegex: null, // No pattern enforcement
           purpose: 'Immediate UX feedback'
         },
@@ -46,7 +46,7 @@ describe('Frontend-Backend Validation Consistency', () => {
 
       expect(validationStrategy.client.library).toBe('Native JavaScript')
       expect(validationStrategy.server.library).toBe('Zod')
-      expect(validationStrategy.client.billReferenceMin).toBeLessThan(
+      expect(validationStrategy.client.billReferenceMin).toBe(
         validationStrategy.server.billReferenceMin
       )
     })

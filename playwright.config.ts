@@ -62,7 +62,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {
-      DATABASE_URL: `file:${process.cwd()}/prisma/test-e2e.db`,
+      DATABASE_URL: 'file:./prisma/test-e2e.db',
     },
   },
 

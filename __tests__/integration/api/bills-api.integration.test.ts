@@ -86,7 +86,7 @@ describe('Bills API Integration Tests', () => {
     it('should enforce server-side minimum length (5 chars)', async () => {
       await seedRequiredData()
 
-      // 4 chars passes client validation (3+ chars) but fails server validation (5+ chars)
+      // 4 chars fails both client and server validation (5+ chars required)
       await expect(createBill({
         billReference: 'ABCD',
         billDate: '2024-01-15'

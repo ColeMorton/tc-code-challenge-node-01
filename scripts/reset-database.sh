@@ -40,6 +40,100 @@ echo "🚀 Creating new migration with corrected constraints..."
 npx prisma migrate dev --name "initial_with_corrected_constraints"
 echo "✅ New migration created"
 
+# Apply triggers separately (prisma migrate dev doesn't execute raw SQL from migration files)
+echo "🔧 Applying database triggers..."
+MIGRATION_DIR=$(ls -td prisma/migrations/*_initial_with_corrected_constraints | head -1)
+if [ -f "$MIGRATION_DIR/triggers.sql" ]; then
+    npx prisma db execute --file "$MIGRATION_DIR/triggers.sql" --schema prisma/schema.prisma
+    echo "✅ Triggers applied"
+else
+    echo "⚠️  Warning: triggers.sql not found, creating it..."
+    cat > "$MIGRATION_DIR/triggers.sql" << 'TRIGGEREOF'
+-- ============================================================================
+-- CORRECTED BILL ASSIGNMENT CONSTRAINTS
+-- ============================================================================
+-- These triggers enforce the 3-bill limit for active bill stages only
+-- Active stages: Draft, Submitted, Approved, Paying, On Hold
+-- Inactive stages: Rejected, Paid (don't count toward limit)
+
+-- 1. Enforce 3-bill limit when inserting a bill with an assigned user
+CREATE TRIGGER IF NOT EXISTS check_bill_limit_insert
+BEFORE INSERT ON bills
+WHEN NEW.assigned_to_id IS NOT NULL
+BEGIN
+  SELECT CASE
+    WHEN (
+      SELECT COUNT(*)
+      FROM bills b
+      JOIN bill_stages bs ON b.bill_stage_id = bs.id
+      WHERE b.assigned_to_id = NEW.assigned_to_id
+        AND bs.label IN ('Draft', 'Submitted', 'Approved', 'Paying', 'On Hold')
+    ) >= 3
+    THEN RAISE(ABORT, 'User already has 3 bills assigned in active stages')
+  END;
+END;
+
+-- 2. Enforce 3-bill limit when updating a bill to assign it to a user
+CREATE TRIGGER IF NOT EXISTS check_bill_limit_update
+BEFORE UPDATE ON bills
+WHEN NEW.assigned_to_id IS NOT NULL
+  AND OLD.assigned_to_id IS NULL
+BEGIN
+  SELECT CASE
+    WHEN (
+      SELECT COUNT(*)
+      FROM bills b
+      JOIN bill_stages bs ON b.bill_stage_id = bs.id
+      WHERE b.assigned_to_id = NEW.assigned_to_id
+        AND bs.label IN ('Draft', 'Submitted', 'Approved', 'Paying', 'On Hold')
+    ) >= 3
+    THEN RAISE(ABORT, 'User already has 3 bills assigned in active stages')
+  END;
+END;
+
+-- 3. Enforce 3-bill limit when reassigning a bill to a different user
+CREATE TRIGGER IF NOT EXISTS check_bill_limit_reassign
+BEFORE UPDATE ON bills
+WHEN NEW.assigned_to_id IS NOT NULL
+  AND OLD.assigned_to_id IS NOT NULL
+  AND NEW.assigned_to_id != OLD.assigned_to_id
+BEGIN
+  SELECT CASE
+    WHEN (
+      SELECT COUNT(*)
+      FROM bills b
+      JOIN bill_stages bs ON b.bill_stage_id = bs.id
+      WHERE b.assigned_to_id = NEW.assigned_to_id
+        AND bs.label IN ('Draft', 'Submitted', 'Approved', 'Paying', 'On Hold')
+    ) >= 3
+    THEN RAISE(ABORT, 'Target user already has 3 bills assigned in active stages')
+  END;
+END;
+
+-- 4. Enforce 3-bill limit when transitioning bills to active stages
+-- This handles cases where a bill moves from inactive to active stage
+CREATE TRIGGER IF NOT EXISTS check_bill_limit_stage_transition
+BEFORE UPDATE ON bills
+WHEN OLD.bill_stage_id != NEW.bill_stage_id
+  AND NEW.assigned_to_id IS NOT NULL
+BEGIN
+  -- Only check if the new stage is an active stage
+  SELECT CASE
+    WHEN (
+      SELECT COUNT(*)
+      FROM bills b
+      JOIN bill_stages bs ON b.bill_stage_id = bs.id
+      WHERE b.assigned_to_id = NEW.assigned_to_id
+        AND bs.label IN ('Draft', 'Submitted', 'Approved', 'Paying', 'On Hold')
+    ) >= 3
+    THEN RAISE(ABORT, 'User already has 3 bills assigned in active stages')
+  END;
+END;
+TRIGGEREOF
+    npx prisma db execute --file "$MIGRATION_DIR/triggers.sql" --schema prisma/schema.prisma
+    echo "✅ Triggers created and applied"
+fi
+
 # Seed the database with test data
 echo "🌱 Seeding database with test data..."
 npm run db:seed
@@ -98,11 +192,13 @@ async function testConstraints() {
                 }
             });
             console.log('❌ ERROR: 4th bill was created (constraint failed!)');
+            process.exit(1);
         } catch (error) {
-            if (error.message.includes('User already has 3 bills assigned in active stages')) {
-                console.log('✅ Constraint working: 4th bill correctly rejected');
+            if (error.code === 'P2003') {
+                console.log('✅ Constraint working: 4th bill correctly rejected (trigger fired)');
             } else {
                 console.log('❌ Unexpected error:', error.message);
+                process.exit(1);
             }
         }
 

@@ -243,7 +243,7 @@ describe('Bills Server Actions', () => {
       const result = await assignBillAction(input)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('User ID is required')
+      expect(result.error).toContain('userId is required')
     })
 
     it('should return error when billId is missing', async () => {
@@ -252,7 +252,7 @@ describe('Bills Server Actions', () => {
       const result = await assignBillAction(input)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('Bill ID is required')
+      expect(result.error).toContain('billId is required')
     })
 
     it('should return error when user not found', async () => {

@@ -88,7 +88,7 @@ describe('Server-Side Validation (Zod)', () => {
         const result = CreateBillSchema.safeParse(invalidData)
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.issues[0].message).toBe('Bill reference can only contain letters, numbers, and hyphens')
+          expect(result.error.issues[0].message).toBe('Bill reference can only contain letters, numbers, and hyphens only')
         }
       })
 
@@ -110,7 +110,7 @@ describe('Server-Side Validation (Zod)', () => {
         })
       })
 
-      it('should trim whitespace before validation', () => {
+      it('should trim whitespace during transform', () => {
         const validData = {
           billReference: '  BILL-2024-001  ',
           billDate: '2024-01-15'
@@ -212,7 +212,7 @@ describe('Server-Side Validation (Zod)', () => {
       const result = AssignBillSchema.safeParse(invalidData)
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Bill ID is required')
+        expect(result.error.issues[0].message).toBe('billId is required')
       }
     })
 
@@ -225,7 +225,7 @@ describe('Server-Side Validation (Zod)', () => {
       const result = AssignBillSchema.safeParse(invalidData)
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('User ID is required')
+        expect(result.error.issues[0].message).toBe('userId is required')
       }
     })
   })
@@ -356,7 +356,7 @@ describe('Server-Side Validation (Zod)', () => {
       const result = validateCreateBillInput(invalidData)
 
       expect(result.success).toBe(false)
-      expect(result.errors?.billReference).toContain('Bill reference can only contain letters, numbers, and hyphens')
+      expect(result.errors?.billReference).toContain('Bill reference can only contain letters, numbers, and hyphens only')
       expect(result.errors?.billDate).toContain('Invalid date format')
     })
 

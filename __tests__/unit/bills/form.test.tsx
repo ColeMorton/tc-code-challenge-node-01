@@ -376,7 +376,7 @@ describe('BillForm', () => {
     render(<BillForm users={mockUsers} />)
 
     const billRefInput = screen.getByTestId('bill-reference-input')
-    fireEvent.change(billRefInput, { target: { value: 'TEST' } })
+    fireEvent.change(billRefInput, { target: { value: 'TEST1' } })
 
     act(() => {
       jest.advanceTimersByTime(500)

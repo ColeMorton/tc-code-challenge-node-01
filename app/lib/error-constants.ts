@@ -93,7 +93,7 @@ export const ERROR_DEFINITIONS: Record<string, ErrorDefinition> = {
 
   BILL_REFERENCE_TOO_SHORT: {
     code: 'BILL_REFERENCE_TOO_SHORT',
-    message: 'Bill reference must be at least 3 characters',
+    message: 'Bill reference must be at least 5 characters',
     httpStatus: 400
   },
 
@@ -145,6 +145,26 @@ export const ERROR_DEFINITIONS: Record<string, ErrorDefinition> = {
     code: 'FAILED_TO_ASSIGN_BILL',
     message: 'Failed to assign bill',
     httpStatus: 500
+  },
+
+  // Enhanced validation and sanitization errors
+  BILL_REFERENCE_INVALID_PATTERN: {
+    code: 'BILL_REFERENCE_INVALID_PATTERN',
+    message: 'Bill reference can only contain letters, numbers, and hyphens only',
+    httpStatus: 400
+  },
+
+
+  INPUT_SANITIZATION_FAILED: {
+    code: 'INPUT_SANITIZATION_FAILED',
+    message: 'Input contains invalid characters and has been sanitized',
+    httpStatus: 400
+  },
+
+  BILL_REFERENCE_SANITIZED: {
+    code: 'BILL_REFERENCE_SANITIZED',
+    message: 'Bill reference contains invalid characters and has been cleaned',
+    httpStatus: 200
   }
 }
 

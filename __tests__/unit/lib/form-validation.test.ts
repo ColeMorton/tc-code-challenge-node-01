@@ -20,15 +20,15 @@ describe('Client-Side Form Validation', () => {
       expect(result?.message).toBe('Bill reference is required')
     })
 
-    it('should enforce minimum length of 3 characters', () => {
+    it('should enforce minimum length of 5 characters', () => {
       const result = FieldValidators.billReference('AB')
       expect(result).not.toBeNull()
-      expect(result?.message).toBe('Bill reference must be at least 3 characters')
+      expect(result?.message).toBe('Bill reference must be at least 5 characters')
       expect(result?.type).toBe('minLength')
     })
 
-    it('should accept valid bill reference with exactly 3 characters', () => {
-      const result = FieldValidators.billReference('ABC')
+    it('should accept valid bill reference with exactly 5 characters', () => {
+      const result = FieldValidators.billReference('ABCDE')
       expect(result).toBeNull()
     })
 
@@ -51,10 +51,11 @@ describe('Client-Side Form Validation', () => {
       expect(result).toBeNull()
     })
 
-    it('should accept bill reference with special characters (client-side)', () => {
-      // Client-side is more permissive than server-side
+    it('should reject bill reference with special characters (client-side)', () => {
+      // Client-side now enforces pattern validation for consistency
       const result = FieldValidators.billReference('BILL@123!')
-      expect(result).toBeNull()
+      expect(result).not.toBeNull()
+      expect(result?.message).toBe('Bill reference can only contain letters, numbers, and hyphens only')
     })
   })
 
@@ -150,7 +151,7 @@ describe('Client-Side Form Validation', () => {
       const result = validateForm(formData)
       expect(result.isValid).toBe(false)
       expect(result.billReference).not.toBeNull()
-      expect(result.billReference?.message).toBe('Bill reference must be at least 3 characters')
+      expect(result.billReference?.message).toBe('Bill reference must be at least 5 characters')
     })
 
     it('should return error for invalid bill date', () => {
@@ -188,14 +189,15 @@ describe('Client-Side Form Validation', () => {
   })
 
   describe('Client-Side Validation Characteristics', () => {
-    it('should be more permissive than server-side validation', () => {
-      // Client accepts 3+ chars, server requires 5+
-      const shortReference = FieldValidators.billReference('ABC')
-      expect(shortReference).toBeNull()
+    it('should be consistent with server-side validation', () => {
+      // Client and server now have consistent validation rules
+      const validReference = FieldValidators.billReference('ABCDE')
+      expect(validReference).toBeNull()
 
-      // Client accepts any characters, server enforces regex
+      // Client and server both enforce regex pattern
       const specialChars = FieldValidators.billReference('BILL@2024!')
-      expect(specialChars).toBeNull()
+      expect(specialChars).not.toBeNull()
+      expect(specialChars?.message).toBe('Bill reference can only contain letters, numbers, and hyphens only')
     })
 
     it('should provide immediate feedback without async operations', () => {
@@ -206,7 +208,7 @@ describe('Client-Side Form Validation', () => {
 
     it('should use native JavaScript without dependencies', () => {
       // This test verifies the validators work with standard JavaScript
-      const testString = 'TEST'
+      const testString = 'TEST5' // 5 characters to meet minimum requirement
       const testDate = '2024-01-15'
 
       expect(typeof FieldValidators.billReference).toBe('function')

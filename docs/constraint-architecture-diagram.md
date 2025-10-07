@@ -141,14 +141,11 @@
             • Error scenarios      • Race conditions
 ```
 
-## Key Improvements Made
+## Key Implementation Features
 
-### 1. **Corrected Stage Filtering**
+### 1. **Stage-Aware Filtering**
 ```sql
--- BEFORE (Incorrect)
-SELECT COUNT(*) FROM bills WHERE assigned_to_id = NEW.assigned_to_id
-
--- AFTER (Correct)
+-- Only count bills in ACTIVE stages
 SELECT COUNT(*) FROM bills b
 JOIN bill_stages bs ON b.bill_stage_id = bs.id
 WHERE b.assigned_to_id = NEW.assigned_to_id
@@ -156,20 +153,20 @@ WHERE b.assigned_to_id = NEW.assigned_to_id
 ```
 
 ### 2. **Complete Scenario Coverage**
-- ✅ New bill assignment
-- ✅ Unassigned bill assignment
-- ✅ Bill reassignment
-- ✅ Stage transitions
+- ✅ New bill assignment (INSERT)
+- ✅ Unassigned bill assignment (UPDATE from NULL)
+- ✅ Bill reassignment (UPDATE to different user)
+- ✅ Stage transitions (UPDATE bill_stage_id)
 
-### 3. **Proper Error Messages**
-- ✅ Clear, actionable error messages
-- ✅ Distinction between active/inactive stages
-- ✅ User-friendly feedback
+### 3. **Clear Error Reporting**
+- ✅ Descriptive error messages from triggers
+- ✅ Prisma error code translation (P2003 for trigger aborts)
+- ✅ Application-level user-friendly messages
 
 ### 4. **Performance Optimization**
-- ✅ Efficient database queries
-- ✅ Proper indexing strategy
-- ✅ Minimal performance impact
+- ✅ Composite indexes on (assigned_to_id, bill_stage_id)
+- ✅ Indexed stage labels for efficient JOINs
+- ✅ Minimal query complexity in triggers
 
 ## Implementation Benefits
 

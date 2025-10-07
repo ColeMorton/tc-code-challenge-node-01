@@ -1,4 +1,7 @@
 import { z } from 'zod'
+import { sanitizeBillReference } from '@/app/lib/sanitization'
+import { BILL_REFERENCE_CONSTRAINTS } from '@/app/lib/validation-constants'
+import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
 
 // Server-only validation with Zod for strict business rules
 
@@ -8,27 +11,47 @@ export interface ValidationResult<T = unknown> {
   errors?: Record<string, string[]>
 }
 
-// Server-side schema with strict business rules
+// Clean server-side schema with sanitization via centralized functions (fail-fast approach)
 export const CreateBillSchema = z.object({
-  billReference: z.string()
-    .trim()
-    .min(1, "Bill reference is required")
-    .min(5, "Bill reference must be at least 5 characters")
-    .max(100, "Bill reference must be less than 100 characters")
-    .regex(/^[A-Za-z0-9-]+$/, "Bill reference can only contain letters, numbers, and hyphens"),
+  billReference: z.preprocess(
+    (val) => {
+      if (typeof val !== 'string') return val
+      // Use centralized sanitization function
+      return sanitizeBillReference(val)
+    },
+    z.string()
+      .min(1, ERROR_DEFINITIONS.BILL_REFERENCE_REQUIRED.message)
+      .min(BILL_REFERENCE_CONSTRAINTS.MIN_LENGTH, ERROR_DEFINITIONS.BILL_REFERENCE_TOO_SHORT.message)
+      .max(BILL_REFERENCE_CONSTRAINTS.MAX_LENGTH, ERROR_DEFINITIONS.BILL_REFERENCE_TOO_LONG.message)
+      .regex(BILL_REFERENCE_CONSTRAINTS.PATTERN, ERROR_DEFINITIONS.BILL_REFERENCE_INVALID_PATTERN.message)
+  ),
   billDate: z.string()
-    .min(1, "Bill date is required")
+    .min(1, ERROR_DEFINITIONS.BILL_DATE_REQUIRED.message)
     .refine((date) => {
       const parsedDate = new Date(date)
       return !isNaN(parsedDate.getTime())
-    }, "Invalid date format"),
-  assignedToId: z.string().optional()
+    }, ERROR_DEFINITIONS.INVALID_DATE_FORMAT.message)
+    .transform(val => {
+      // Normalize date format during transform
+      const trimmed = val.trim()
+      const date = new Date(trimmed)
+      
+      // Return ISO date string (YYYY-MM-DD)
+      return date.toISOString().split('T')[0]
+    }),
+  assignedToId: z.string()
+    .optional()
+    .transform(val => val === '' ? undefined : val) // Convert empty string to undefined
 })
 
-// Schema for bill assignment
+// Clean assignment schema with sanitization via Zod transforms
 export const AssignBillSchema = z.object({
-  billId: z.string().min(1, "Bill ID is required"),
-  userId: z.string().min(1, "User ID is required")
+  billId: z.string()
+    .min(1, ERROR_DEFINITIONS.BILL_ID_REQUIRED.message)
+    .transform(val => val.trim()), // Sanitize during transform
+  userId: z.string()
+    .min(1, ERROR_DEFINITIONS.USER_ID_REQUIRED.message)
+    .transform(val => val.trim()) // Sanitize during transform
 })
 
 // Type exports for TypeScript
@@ -55,7 +78,7 @@ export function validateWithZod<T>(
   }
 }
 
-// Server-side validation functions
+// Server-side validation functions with built-in sanitization via Zod schemas
 export function validateCreateBillInput(input: unknown): ValidationResult<CreateBillData> {
   return validateWithZod(CreateBillSchema, input)
 }

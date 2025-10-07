@@ -4,11 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/app/lib/prisma'
 import { monitorBillAssignment } from '@/lib/monitoring'
 import { validateCreateBillInput, validateAssignBillInput } from '@/app/lib/validation'
-import { 
-  CreateBillInput, 
-  SimpleValidationResult, 
-  AssignBillInput, 
-  AssignBillResult, 
+import {
+  CreateBillInput,
+  SimpleValidationResult,
+  AssignBillInput,
+  AssignBillResult,
   BillAssignmentError
 } from '@/app/lib/definitions'
 import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
@@ -46,7 +46,7 @@ export async function validateBillReference(billReference: string): Promise<Simp
 }
 
 export async function createBill(input: CreateBillInput) {
-  // Validate input with Zod
+  // Validate input with Zod (sanitization handled by schema preprocessors)
   const validation = validateCreateBillInput(input)
   if (!validation.success) {
     const errorMessages = Object.values(validation.errors || {}).flat()
@@ -96,8 +96,8 @@ const MAX_RETRIES = 3
  */
 export const assignBillAction = monitorBillAssignment(async (input: AssignBillInput): Promise<AssignBillResult> => {
   const startTime = Date.now()
-  
-  // Validate input with Zod
+
+  // Validate input with Zod (sanitization handled by schema preprocessors)
   const validation = validateAssignBillInput(input)
   if (!validation.success) {
     const errorMessages = Object.values(validation.errors || {}).flat()

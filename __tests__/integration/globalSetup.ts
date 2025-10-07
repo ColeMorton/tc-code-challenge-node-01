@@ -28,12 +28,8 @@ export default async function globalSetup() {
     })
     console.log('✅ Created test database schema')
 
-    // Apply corrected database constraints/triggers
-    execSync('npx prisma db execute --file prisma/migrations/20241007000000_add_bill_limit_triggers/migration.sql --schema prisma/schema.prisma', {
-      stdio: 'pipe',
-      env: { ...process.env, DATABASE_URL: 'file:./test.db' }
-    })
-    console.log('✅ Applied corrected database constraints')
+    // Database constraints (triggers) are now included in the initial migration
+    console.log('✅ Database constraints applied via migration')
 
     // Seed test database with required data
     const seedCommand = 'tsx prisma/seed.ts'

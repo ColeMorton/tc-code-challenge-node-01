@@ -1,6 +1,8 @@
 // Client-side form validation types and functions
 import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
 import type { BillFormData, FormFieldError } from '@/app/lib/definitions'
+import { sanitizeBillReference } from '@/app/lib/sanitization'
+import { BILL_REFERENCE_CONSTRAINTS } from '@/app/lib/validation-constants'
 
 // FormFieldError is imported from definitions.ts
 
@@ -22,21 +24,26 @@ export const initialValidationState: FormValidationState = {
   isValid: false
 }
 
-// Native client-side field validators
+// Enhanced client-side field validators with centralized error messages
 export const FieldValidators = {
   billReference: (value: string): FormFieldError | null => {
-    const trimmedValue = value.trim()
+    const sanitized = sanitizeBillReference(value)
 
-    if (!trimmedValue) {
+    if (!sanitized) {
       return { message: ERROR_DEFINITIONS.BILL_REFERENCE_REQUIRED.message, type: 'required' }
     }
 
-    if (trimmedValue.length < 3) {
+    if (sanitized.length < BILL_REFERENCE_CONSTRAINTS.MIN_LENGTH) {
       return { message: ERROR_DEFINITIONS.BILL_REFERENCE_TOO_SHORT.message, type: 'minLength' }
     }
 
-    if (trimmedValue.length > 100) {
+    if (sanitized.length > BILL_REFERENCE_CONSTRAINTS.MAX_LENGTH) {
       return { message: ERROR_DEFINITIONS.BILL_REFERENCE_TOO_LONG.message, type: 'maxLength' }
+    }
+
+    // Add pattern validation on client side for better UX
+    if (!BILL_REFERENCE_CONSTRAINTS.PATTERN.test(sanitized)) {
+      return { message: ERROR_DEFINITIONS.BILL_REFERENCE_INVALID_PATTERN.message, type: 'pattern' }
     }
 
     return null

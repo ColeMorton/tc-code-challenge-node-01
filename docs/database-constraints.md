@@ -59,30 +59,12 @@ WHERE b.assigned_to_id = NEW.assigned_to_id
 
 ## Why These Constraints Are Necessary
 
-### Problem with Original Migration
+### Constraint Logic
 
-The original migration.sql had several critical flaws:
-
-1. **❌ Counted ALL bills** regardless of stage
-2. **❌ Missed stage transition scenarios**
-3. **❌ No handling of bill reassignment**
-4. **❌ Incorrect business logic**
-
-### Example of Original Problem
+The database triggers implement precise business logic for the 3-bill limit:
 
 ```sql
--- ORIGINAL (INCORRECT)
-SELECT COUNT(*) FROM bills WHERE assigned_to_id = NEW.assigned_to_id
-
--- This would count bills in "Rejected" and "Paid" stages
--- User with 2 active bills + 1 rejected bill = 3 total
--- New assignment would be blocked incorrectly
-```
-
-### Corrected Logic
-
-```sql
--- CORRECTED
+-- Only count bills in ACTIVE stages
 SELECT COUNT(*) FROM bills b
 JOIN bill_stages bs ON b.bill_stage_id = bs.id
 WHERE b.assigned_to_id = NEW.assigned_to_id
@@ -91,6 +73,13 @@ WHERE b.assigned_to_id = NEW.assigned_to_id
 -- This only counts active stages
 -- User with 2 active bills + 1 rejected bill = 2 active (can accept 1 more)
 ```
+
+### Key Design Principles
+
+1. **✅ Stage-aware counting** - Only active stages count toward the limit
+2. **✅ Complete scenario coverage** - All assignment and transition cases handled
+3. **✅ Atomic enforcement** - Database-level guarantees prevent race conditions
+4. **✅ Correct business logic** - Rejected and Paid bills don't block new assignments
 
 ## Integration with Application Logic
 
@@ -187,20 +176,44 @@ The JOIN in the trigger is optimized by:
 
 ## Migration Strategy
 
-### Applying the Corrected Constraints
+### Database Setup
 
-1. **Backup existing data**
-2. **Drop old triggers** (if they exist)
-3. **Apply new triggers**
-4. **Test with sample data**
-5. **Verify application integration**
+The database constraints are automatically applied during setup:
 
-### Rollback Plan
+```bash
+# Automatic setup (recommended)
+npm run db:setup
 
-If issues arise:
-1. Drop the new triggers
-2. Restore original triggers (if needed)
-3. Rely on application-level enforcement
+# Manual setup
+npx prisma db push      # Applies schema + triggers
+npm run db:seed         # Adds sample data
+```
+
+The initial migration includes:
+- Base schema (tables, indexes, foreign keys)
+- SQLite triggers for the 3-bill limit constraint
+- All constraints applied atomically
+
+### Migration File Structure
+
+```
+prisma/migrations/YYYYMMDDHHMMSS_initial_with_corrected_constraints/
+├── migration.sql    # Prisma-generated schema (tables, indexes, foreign keys)
+└── triggers.sql     # Custom SQLite triggers (applied post-migration)
+```
+
+**Important**: Prisma doesn't support custom SQLite triggers in `schema.prisma`, so triggers are maintained separately in `triggers.sql` and applied after migrations using `prisma db execute`.
+
+### Separation of Concerns
+
+- **Prisma Schema** (`schema.prisma`): Defines models, relationships, indexes
+- **Prisma Migration** (`migration.sql`): Auto-generated from schema
+- **Custom Triggers** (`triggers.sql`): Manually maintained business logic
+
+This separation ensures:
+- Prisma can regenerate migrations without losing custom triggers
+- Clear distinction between ORM-managed and custom database logic
+- Triggers can be updated independently of schema changes
 
 ## Monitoring and Alerting
 
@@ -225,12 +238,12 @@ performanceMonitor.record({
 
 ## Conclusion
 
-The corrected database constraints provide:
+The database constraints provide:
 
-- ✅ **Proper stage filtering** - Only active stages count
-- ✅ **Complete coverage** - All assignment scenarios covered  
-- ✅ **Performance optimization** - Efficient queries with proper indexes
-- ✅ **Integration** - Works seamlessly with application logic
-- ✅ **Safety net** - Prevents data corruption at database level
+- ✅ **Proper stage filtering** - Only active stages count toward the 3-bill limit
+- ✅ **Complete coverage** - All assignment scenarios (insert, update, reassign, stage transition)
+- ✅ **Performance optimization** - Efficient queries with proper composite indexes
+- ✅ **Integration** - Works seamlessly with application logic and server actions
+- ✅ **Data integrity** - Atomic enforcement prevents data corruption at the database level
 
-This multi-layered approach ensures business rule enforcement while maintaining performance and user experience.
+This multi-layered defense-in-depth approach ensures robust business rule enforcement while maintaining excellent performance and user experience.

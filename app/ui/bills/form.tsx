@@ -17,6 +17,7 @@ import {
   AsyncValidationState,
   BillFormProps
 } from '@/app/lib/definitions'
+import { sanitizeBillReference } from '@/app/lib/sanitization'
 
 export default function BillForm({ users }: BillFormProps) {
   const router = useRouter()
@@ -80,11 +81,12 @@ export default function BillForm({ users }: BillFormProps) {
   }
 
   const handleBillReferenceChange = (value: string) => {
-    const newFormData = { ...formData, billReference: value }
+    const sanitized = sanitizeBillReference(value)
+    const newFormData = { ...formData, billReference: sanitized }
     setFormData(newFormData)
 
     // Validate field immediately with Zod
-    const fieldError = FieldValidators.billReference(value)
+    const fieldError = FieldValidators.billReference(sanitized)
     setValidation(prev => ({
       ...prev,
       billReference: fieldError,
@@ -97,10 +99,10 @@ export default function BillForm({ users }: BillFormProps) {
     }
 
     // Only validate asynchronously if the value is not empty and passes basic validation
-    if (value.trim() && !fieldError) {
+    if (sanitized.trim() && !fieldError) {
       // Set new timeout for async validation
       validationTimeoutRef.current = setTimeout(() => {
-        handleValidateBillReference(value)
+        handleValidateBillReference(sanitized)
       }, 500)
     } else {
       // Reset async validation state for empty or invalid values
