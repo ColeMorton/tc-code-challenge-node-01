@@ -21,7 +21,7 @@ const mockBills = [
     billStageId: 'submitted',
     assignedToId: 'user1',
     assignedTo: { id: 'user1', name: 'John Doe', email: 'john@example.com' },
-    billStage: { id: 'submitted', label: 'Submitted', colour: '#3B82F6' }
+    billStage: { id: 'submitted', label: 'Submitted' }
   },
   {
     id: '2',
@@ -33,7 +33,7 @@ const mockBills = [
     billStageId: 'draft',
     assignedToId: null,
     assignedTo: null,
-    billStage: { id: 'draft', label: 'Draft', colour: '#6B7280' }
+    billStage: { id: 'draft', label: 'Draft' }
   }
 ]
 

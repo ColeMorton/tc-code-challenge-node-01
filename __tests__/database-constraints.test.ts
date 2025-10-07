@@ -33,28 +33,24 @@ describe('Database Constraints - Bill Assignment Limits', () => {
     draftStage = await prisma.billStage.create({
       data: {
         label: 'Draft',
-        colour: '#6B7280'
       }
     })
 
     submittedStage = await prisma.billStage.create({
       data: {
         label: 'Submitted',
-        colour: '#3B82F6'
       }
     })
 
     rejectedStage = await prisma.billStage.create({
       data: {
         label: 'Rejected',
-        colour: '#EF4444'
       }
     })
 
     paidStage = await prisma.billStage.create({
       data: {
         label: 'Paid',
-        colour: '#10B981'
       }
     })
   })

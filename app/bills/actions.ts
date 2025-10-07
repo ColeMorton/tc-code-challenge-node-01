@@ -13,6 +13,12 @@ import {
 } from '@/app/lib/definitions'
 import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
 import { createError, handleError } from '@/app/lib/errors'
+import { BILL_STAGE } from '@/app/lib/bill-stage-config'
+import { 
+  isStageAssignable, 
+  getTargetStageForAssignment,
+  shouldSetSubmittedAtOnAssignment 
+} from '@/app/lib/bill-business-logic'
 
 async function validateUserCapacity(userId: string): Promise<void> {
   const userBillCount = await prisma.bill.count({
@@ -68,7 +74,7 @@ export async function createBill(input: CreateBillInput) {
   }
 
   const draftStage = await prisma.billStage.findFirst({
-    where: { label: 'Draft' }
+    where: { label: BILL_STAGE.DRAFT.label }
   })
 
   if (!draftStage) {
@@ -161,7 +167,7 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
           throw createError(BillAssignmentError.BILL_ALREADY_ASSIGNED)
         }
 
-        if (!['Draft', 'Submitted'].includes(bill.billStage.label)) {
+        if (!isStageAssignable(bill.billStage)) {
           throw createError(BillAssignmentError.INVALID_BILL_STAGE)
         }
 
@@ -171,19 +177,23 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
         }
 
         // Set submittedAt if transitioning from Draft to Submitted
-        if (bill.billStage.label === 'Draft') {
-          const submittedStage = await tx.billStage.findFirst({
-            where: { label: 'Submitted' }
+        if (shouldSetSubmittedAtOnAssignment(bill.billStage)) {
+          const targetStageLabel = getTargetStageForAssignment(bill.billStage)
+          if (!targetStageLabel) {
+            throw createError(BillAssignmentError.INVALID_BILL_STAGE)
+          }
+          const targetStage = await tx.billStage.findFirst({
+            where: { label: targetStageLabel }
           })
           
-          if (submittedStage) {
+          if (targetStage) {
           updateData.submittedAt = new Date()
             await tx.bill.update({
               where: { id: bill.id },
               data: {
                 assignedToId: userId,
                 submittedAt: new Date(),
-                billStageId: submittedStage.id
+                billStageId: targetStage.id
               },
               include: {
                 assignedTo: true,

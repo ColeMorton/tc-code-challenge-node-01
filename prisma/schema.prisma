@@ -25,7 +25,6 @@ model User {
 model BillStage {
   id        String   @id @default(cuid())
   label     String   @unique
-  colour    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   bills     Bill[]

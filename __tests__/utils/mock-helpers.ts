@@ -39,7 +39,6 @@ export function createMockPrismaWithData() {
   mockPrisma.billStage.findFirst.mockResolvedValue({
     id: 'draft-stage',
     label: 'Draft',
-    colour: '#6B7280',
     createdAt: new Date(),
     updatedAt: new Date()
   })
@@ -48,14 +47,12 @@ export function createMockPrismaWithData() {
     {
       id: 'draft-stage',
       label: 'Draft',
-      colour: '#6B7280',
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
       id: 'submitted-stage',
       label: 'Submitted',
-      colour: '#3B82F6',
       createdAt: new Date(),
       updatedAt: new Date()
     }

@@ -16,8 +16,7 @@ export async function GET() {
         billStage: {
           select: {
             id: true,
-            label: true,
-            colour: true
+            label: true
           }
         }
       },

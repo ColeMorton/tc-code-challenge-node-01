@@ -1,4 +1,5 @@
 import { prisma } from '@/app/lib/prisma'
+import { BILL_STAGE } from '@/app/lib/bill-stage-config'
 
 export async function getBills() {
   return await prisma.bill.findMany({
@@ -13,8 +14,7 @@ export async function getBills() {
       billStage: {
         select: {
           id: true,
-          label: true,
-          colour: true
+          label: true
         }
       }
     },
@@ -36,7 +36,7 @@ export async function fetchTotalNumberSubmittedBills() {
   return await prisma.bill.count({
     where: {
       billStage: {
-        label: 'Submitted'
+        label: BILL_STAGE.SUBMITTED.label
       }
     }
   })
@@ -46,7 +46,7 @@ export async function fetchTotalNumberApprovedBills() {
   return await prisma.bill.count({
     where: {
       billStage: {
-        label: 'Approved'
+        label: BILL_STAGE.APPROVED.label
       }
     }
   })
@@ -56,7 +56,7 @@ export async function fetchTotalNumberOnHoldBills() {
   return await prisma.bill.count({
     where: {
       billStage: {
-        label: 'On Hold'
+        label: BILL_STAGE.ON_HOLD.label
       }
     }
   })
@@ -78,8 +78,8 @@ export async function fetchUserBillsSummary() {
     userName: user.name,
     userEmail: user.email,
     totalBills: user.bills.length,
-    totalSubmitted: user.bills.filter(bill => bill.billStage.label === 'Submitted').length,
-    totalApproved: user.bills.filter(bill => bill.billStage.label === 'Approved').length,
-    totalOnHold: user.bills.filter(bill => bill.billStage.label === 'On Hold').length
+    totalSubmitted: user.bills.filter(bill => bill.billStage.label === BILL_STAGE.SUBMITTED.label).length,
+    totalApproved: user.bills.filter(bill => bill.billStage.label === BILL_STAGE.APPROVED.label).length,
+    totalOnHold: user.bills.filter(bill => bill.billStage.label === BILL_STAGE.ON_HOLD.label).length
   }))
 }

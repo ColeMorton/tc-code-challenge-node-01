@@ -88,7 +88,7 @@ describe('3-Bill Capacity Enforcement', () => {
         assignedToId: 'user-with-capacity'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
       const mockBill = {
         id: 'new-bill',
         billReference: 'BILL-TEST-002',
@@ -119,7 +119,7 @@ describe('3-Bill Capacity Enforcement', () => {
         // No assignedToId
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
       const mockBill = {
         id: 'new-bill',
         billReference: 'BILL-TEST-003',
@@ -159,7 +159,7 @@ describe('3-Bill Capacity Enforcement', () => {
         assignedToId: 'user-with-two-bills'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
       const mockBill = {
         id: 'third-bill',
         billReference: 'BILL-THIRD',
@@ -220,13 +220,13 @@ describe('3-Bill Capacity Enforcement', () => {
         billReference: 'BILL-456',
         billDate: new Date('2024-01-01'),
         billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        billStage: { id: 'draft-stage', label: 'Draft' },
         assignedToId: null
       }
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
       mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.billStage.findFirst.mockResolvedValue({ id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' })
+      mockPrisma.billStage.findFirst.mockResolvedValue({ id: 'submitted-stage', label: 'Submitted' })
       mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'user-with-space' })
 
       const result = await assignBillAction(input)
@@ -273,7 +273,7 @@ describe('3-Bill Capacity Enforcement', () => {
         assignedToId: 'new-user'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
       const mockBill = {
         id: 'first-bill',
         billReference: 'FIRST-BILL',
@@ -299,7 +299,7 @@ describe('3-Bill Capacity Enforcement', () => {
         assignedToId: ''
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
       const mockBill = {
         id: 'empty-bill',
         billReference: 'EMPTY-ASSIGNED',

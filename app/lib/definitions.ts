@@ -26,7 +26,6 @@ export interface User {
 export interface BillStage {
   id: string
   label: string
-  colour: string
   createdAt?: Date
   updatedAt?: Date
 }
@@ -202,7 +201,6 @@ export interface AssignBillResult {
     billStage?: {
       id: string
       label: string
-      colour: string
     }
   }
 }
@@ -350,7 +348,6 @@ export interface MockApiUser {
 export interface MockBillStage {
   id: string
   label: string
-  colour: string
   createdAt?: Date
   updatedAt?: Date
 }

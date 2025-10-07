@@ -38,7 +38,7 @@ describe('/api/bills', () => {
           billStageId: 'stage1',
           assignedToId: 'user1',
           assignedTo: { id: 'user1', name: 'John Doe', email: 'john@example.com' },
-          billStage: { id: 'stage1', label: 'Draft', colour: '#9CA3AF' }
+          billStage: { id: 'stage1', label: 'Draft' }
         }
       ]
 
@@ -61,8 +61,7 @@ describe('/api/bills', () => {
           billStage: {
             select: {
               id: true,
-              label: true,
-              colour: true
+              label: true
             }
           }
         },

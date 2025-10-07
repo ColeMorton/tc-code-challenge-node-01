@@ -47,7 +47,6 @@ describe('/api/bills/assign', () => {
         billStage: {
           id: 'submitted-stage',
           label: 'Submitted',
-          colour: '#3B82F6'
         }
       }
 

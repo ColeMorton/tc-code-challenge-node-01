@@ -37,13 +37,13 @@ export async function seedRequiredData() {
   try {
     // Create bill stages using upsert to handle race conditions
     const billStageData = [
-      { label: 'Draft', colour: '#9CA3AF' },
-      { label: 'Submitted', colour: '#3B82F6' },
-      { label: 'Approved', colour: '#10B981' },
-      { label: 'Paying', colour: '#F59E0B' },
-      { label: 'On Hold', colour: '#EF4444' },
-      { label: 'Rejected', colour: '#DC2626' },
-      { label: 'Paid', colour: '#059669' }
+      { label: 'Draft' },
+      { label: 'Submitted' },
+      { label: 'Approved' },
+      { label: 'Paying' },
+      { label: 'On Hold' },
+      { label: 'Rejected' },
+      { label: 'Paid' }
     ]
 
     const stages = []

@@ -7,6 +7,7 @@ import {
   BillsDashboardProps,
   GroupedBills
 } from '@/app/lib/definitions'
+import { getStageConfig, STAGE_ORDER } from '@/app/lib/bill-stage-config'
 
 export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +59,7 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
   }
 
   const groupedBills = groupBillsByStage(bills)
-  const stageOrder = ['Draft', 'Submitted', 'Approved', 'Paying', 'On Hold', 'Rejected', 'Paid']
+  const stageOrder = STAGE_ORDER
 
   return (
     <div>
@@ -81,7 +82,7 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
       >
         {stageOrder.map((stageLabel) => {
           const stageBills = groupedBills[stageLabel] || []
-          const stageColor = stageBills[0]?.billStage.colour || '#9CA3AF'
+          const stageConfig = getStageConfig(stageLabel)
 
           return (
             <div 
@@ -92,12 +93,11 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
               aria-labelledby={`stage-${stageLabel.toLowerCase().replace(' ', '-')}-header`}
             >
               <div
-                className="px-4 py-3 rounded-t-lg border-b border-gray-200"
-                style={{ backgroundColor: stageColor }}
+                className={`px-4 py-3 rounded-t-lg border-b border-gray-200 ${stageConfig.colorClass} ${stageConfig.textClass}`}
               >
                 <h2 
                   id={`stage-${stageLabel.toLowerCase().replace(' ', '-')}-header`}
-                  className="font-semibold text-white text-center"
+                  className={`font-semibold text-center ${stageConfig.textClass}`}
                 >
                   {stageLabel} ({stageBills.length})
                 </h2>

@@ -109,7 +109,7 @@ describe('Bills Server Actions', () => {
         billDate: '2024-01-01'
       }
 
-      const mockDraftStage = { id: 'draft-stage', label: 'Draft', colour: '#6B7280' }
+      const mockDraftStage = { id: 'draft-stage', label: 'Draft' }
       const mockBill = {
         id: 'c1234567890123456789012345',
         billReference: 'BILL-TEST-001',
@@ -209,14 +209,14 @@ describe('Bills Server Actions', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        billStage: { id: 'draft-stage', label: 'Draft' },
         submittedAt: null,
         assignedToId: null
       }
 
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
       mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.billStage.findFirst.mockResolvedValue({ id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' })
+      mockPrisma.billStage.findFirst.mockResolvedValue({ id: 'submitted-stage', label: 'Submitted' })
       mockPrisma.bill.update.mockResolvedValue({ ...mockBill, assignedToId: 'c9876543210987654321098765' })
 
       const result = await assignBillAction(input)
@@ -314,7 +314,7 @@ describe('Bills Server Actions', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        billStage: { id: 'draft-stage', label: 'Draft' },
         submittedAt: null,
         assignedToId: 'c1111111111111111111111111'
       }
@@ -341,7 +341,7 @@ describe('Bills Server Actions', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'approved-stage',
-        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' },
+        billStage: { id: 'approved-stage', label: 'Approved' },
         submittedAt: null,
         assignedToId: null
       }
@@ -368,7 +368,7 @@ describe('Bills Server Actions', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'submitted-stage',
-        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
+        billStage: { id: 'submitted-stage', label: 'Submitted' },
         submittedAt: null,
         assignedToId: null
       }
@@ -403,7 +403,7 @@ describe('Bills Server Actions', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'submitted-stage',
-        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
+        billStage: { id: 'submitted-stage', label: 'Submitted' },
         submittedAt: new Date('2024-01-01'),
         assignedToId: null
       }
@@ -438,7 +438,7 @@ describe('Bills Server Actions', () => {
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
         billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
+        billStage: { id: 'draft-stage', label: 'Draft' },
         submittedAt: null,
         assignedToId: null
       }
