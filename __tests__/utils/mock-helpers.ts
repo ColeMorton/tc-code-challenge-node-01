@@ -67,6 +67,6 @@ export function createMockPrismaWithData() {
 /**
  * Type-safe mock function creator
  */
-export function createTypedMock<T extends (...args: any[]) => any>(): jest.MockedFunction<T> {
+export function createTypedMock<T extends (...args: unknown[]) => unknown>(): jest.MockedFunction<T> {
   return jest.fn() as unknown as jest.MockedFunction<T>
 }
