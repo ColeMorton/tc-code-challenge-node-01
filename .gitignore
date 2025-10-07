@@ -16,6 +16,11 @@ out/
 
 # Database
 prisma/dev.db
+prisma/test-e2e.db
+prisma/test.db
+prisma/*.db
+prisma/prisma/*.db
+prisma/migrations/migration_lock.toml
 
 # TypeScript build artifacts
 *.tsbuildinfo

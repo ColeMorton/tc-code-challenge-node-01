@@ -28,13 +28,20 @@ export default async function globalSetup() {
     })
     console.log('✅ Created test database schema')
 
-    // Seed test database with required data (already applies constraints)
+    // Apply corrected database constraints/triggers
+    execSync('npx prisma db execute --file prisma/migrations/20241007000000_add_bill_limit_triggers/migration.sql --schema prisma/schema.prisma', {
+      stdio: 'pipe',
+      env: { ...process.env, DATABASE_URL: 'file:./test.db' }
+    })
+    console.log('✅ Applied corrected database constraints')
+
+    // Seed test database with required data
     const seedCommand = 'tsx prisma/seed.ts'
     execSync(seedCommand, {
       stdio: 'pipe',
       env: { ...process.env, DATABASE_URL: 'file:./test.db' }
     })
-    console.log('✅ Seeded test database (includes constraints)')
+    console.log('✅ Seeded test database')
 
   } catch (error) {
     console.error('❌ Failed to setup test database:', error)
