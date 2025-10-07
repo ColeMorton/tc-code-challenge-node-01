@@ -67,9 +67,6 @@ export default async function BillsTable() {
                 >
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
-                        {user.userName.charAt(0).toUpperCase()}
-                      </div>
                       <p className="font-medium">{user.userName}</p>
                     </div>
                   </td>
