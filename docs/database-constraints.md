@@ -94,16 +94,16 @@ WHERE b.assigned_to_id = NEW.assigned_to_id
 
 ## Integration with Application Logic
 
-### Multi-Layer Enforcement
-
-The system uses a **defense-in-depth** approach:
+The system uses a **defense-in-depth** approach with multiple enforcement layers:
 
 1. **Database Triggers** - Final safety net at database level
-2. **Application Logic** - Primary business rule enforcement
-3. **Caching Layer** - Performance optimization
+2. **Application Logic** - Primary business rule enforcement with server actions
+3. **Caching Layer** - Performance optimization for user capacity checks
 4. **Monitoring** - Observability and alerting
 
 ### Application-Level Validation
+
+The application enforces the 3-bill limit through server actions in `app/bills/actions.ts`:
 
 ```typescript
 // Primary enforcement in application code
@@ -121,7 +121,7 @@ if (userWithCount._count.bills >= 3) {
 }
 ```
 
-### Why Both Layers Are Needed
+### Multi-Layer Benefits
 
 **Database Triggers:**
 - ✅ Prevent data corruption at the lowest level

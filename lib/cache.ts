@@ -131,12 +131,16 @@ export const CACHE_TTL = {
  * Cached user bill count with automatic refresh
  */
 export async function getCachedUserBillCount(userId: string): Promise<number> {
+  const { performanceMonitor } = await import('./monitoring')
   const cacheKey = CACHE_KEYS.USER_BILL_COUNT(userId)
   const cached = cache.get<number>(cacheKey)
   
   if (cached !== null) {
+    performanceMonitor.recordCacheHit()
     return cached
   }
+
+  performanceMonitor.recordCacheMiss()
 
   // Fetch from database
   const { prisma } = await import('./prisma')
@@ -167,10 +171,12 @@ export async function getCachedUserCapacity(userId: string): Promise<{
   availableSlots: number
   capacityStatus: string
 } | null> {
+  const { performanceMonitor } = await import('./monitoring')
   const cacheKey = CACHE_KEYS.USER_CAPACITY(userId)
   const cached = cache.get(cacheKey)
   
   if (cached !== null && cached !== undefined) {
+    performanceMonitor.recordCacheHit()
     return cached as {
       userId: string
       userName: string
@@ -180,6 +186,8 @@ export async function getCachedUserCapacity(userId: string): Promise<{
       capacityStatus: string
     }
   }
+
+  performanceMonitor.recordCacheMiss()
 
   // Fetch from database
   const { getUserAssignmentCapacity } = await import('./database-constraints')

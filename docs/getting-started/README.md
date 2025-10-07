@@ -223,21 +223,22 @@ npx prisma generate      # Update TypeScript types
 ## Understanding the Tech Stack
 
 ### Frontend (React/Next.js)
-- **Next.js 15**: App Router for modern routing and server components
-- **React 19**: Latest React with hooks and concurrent features
-- **TypeScript**: Static typing for better development experience
-- **Tailwind CSS**: Utility-first styling framework
+- **Next.js 15.5.2**: App Router for modern routing and server components
+- **React 19.1.0**: Latest React with hooks and concurrent features
+- **TypeScript 5**: Static typing for better development experience
+- **Tailwind CSS v4**: Utility-first styling framework
 
 ### Backend (Next.js API)
 - **API Routes**: Server-side endpoints using Next.js conventions
-- **Prisma ORM**: Type-safe database access with auto-generated client
+- **Prisma ORM 6.16.2**: Type-safe database access with auto-generated client
 - **SQLite**: Lightweight database perfect for development
+- **Server Actions**: Server-side business logic with `'use server'` directives
 
 ### Testing Stack
-- **Jest**: JavaScript testing framework
-- **React Testing Library**: Component testing utilities
-- **Playwright**: End-to-end browser testing
-- **Supertest**: HTTP integration testing
+- **Jest 30.1.3**: JavaScript testing framework with multi-project configuration
+- **React Testing Library 16.3.0**: Component testing utilities
+- **Playwright 1.51.1**: End-to-end browser testing
+- **Supertest 7.1.4**: HTTP integration testing
 
 ## Troubleshooting
 

@@ -113,22 +113,28 @@ const autoAssignBill = async (userId: string) => {
 }
 ```
 
-### Validating Bill References
+### Server Actions for Bill Management
 
 ```typescript
-const validateBillReference = async (billReference: string) => {
-  const response = await fetch(
-    `/api/bills/validate?billReference=${encodeURIComponent(billReference)}`
-  )
+// Using server actions for bill creation
+import { createBill, validateBillReference } from '@/app/bills/actions'
 
-  const result = await response.json()
-  return {
-    exists: result.exists,
-    isValid: result.isValid
+const handleCreateBill = async (formData: FormData) => {
+  try {
+    const billData = {
+      billReference: formData.get('billReference') as string,
+      billDate: formData.get('billDate') as string,
+      assignedToId: formData.get('assignedToId') as string || undefined
+    }
+
+    const newBill = await createBill(billData)
+    console.log('Bill created:', newBill)
+  } catch (error) {
+    console.error('Creation failed:', error)
   }
 }
 
-// Real-time validation example
+// Real-time validation using server action
 const [validation, setValidation] = useState({ isValid: true, message: '' })
 
 const checkBillReference = async (reference: string) => {
@@ -138,7 +144,7 @@ const checkBillReference = async (reference: string) => {
     const result = await validateBillReference(reference)
     setValidation({
       isValid: result.isValid,
-      message: result.isValid ? 'Reference available' : 'Reference already exists'
+      message: result.message || 'Reference available'
     })
   } catch (error) {
     setValidation({

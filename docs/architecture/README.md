@@ -5,7 +5,7 @@ This document provides a comprehensive overview of the Trilogy Care Bill Managem
 ## Technology Stack
 
 ### Frontend
-- **Next.js 15**: React framework with App Router for modern web development
+- **Next.js 15.5.2**: React framework with App Router for modern web development
 - **React 19.1.0**: Component-based UI library with hooks and context
 - **TypeScript 5**: Static typing for improved developer experience and code quality
 - **Tailwind CSS v4**: Utility-first CSS framework for rapid UI development
@@ -13,15 +13,17 @@ This document provides a comprehensive overview of the Trilogy Care Bill Managem
 
 ### Backend
 - **Next.js API Routes**: Server-side API endpoints using App Router conventions
-- **Prisma ORM 6.15.0**: Type-safe database client and schema management
+- **Prisma ORM 6.16.2**: Type-safe database client and schema management
 - **SQLite**: Lightweight, file-based database for development and testing
+- **Server Actions**: Server-side business logic with `'use server'` directives
 
 ### Development & Testing
-- **Jest 30.1.3**: JavaScript testing framework
-- **React Testing Library**: Component testing utilities
-- **Playwright**: End-to-end testing framework
-- **ESLint**: Code linting and formatting
-- **TypeScript Compiler**: Type checking and compilation
+- **Jest 30.1.3**: JavaScript testing framework with multi-project configuration
+- **React Testing Library 16.3.0**: Component testing utilities
+- **Playwright 1.51.1**: End-to-end testing framework
+- **ESLint 9**: Code linting and formatting
+- **TypeScript 5**: Type checking and compilation
+- **Supertest 7.1.4**: HTTP integration testing
 
 ## Project Structure
 
@@ -29,21 +31,35 @@ This document provides a comprehensive overview of the Trilogy Care Bill Managem
 ├── app/                          # Next.js App Router
 │   ├── api/                     # API route handlers
 │   │   ├── bills/              # Bill-related endpoints
-│   │   │   ├── route.ts       # GET/POST /api/bills
-│   │   │   ├── assign/        # POST /api/bills/assign
-│   │   │   └── validate/      # GET /api/bills/validate
-│   │   └── users/             # GET /api/users
-│   ├── bills/                  # Bills pages
+│   │   │   ├── route.ts       # GET /api/bills
+│   │   │   └── assign/        # POST /api/bills/assign
+│   │   ├── users/             # GET /api/users
+│   │   └── health/            # GET /api/health
+│   ├── bills/                  # Bills pages and actions
 │   │   ├── page.tsx           # Bills dashboard
-│   │   └── new/               # New bill form
+│   │   ├── new/               # New bill form
+│   │   └── actions.ts         # Server actions
+│   ├── lib/                    # Shared utilities
+│   │   ├── prisma.ts          # Prisma client singleton
+│   │   ├── data.ts            # Data access functions
+│   │   ├── validation.ts      # Input validation
+│   │   ├── error-constants.ts # Error definitions
+│   │   └── definitions.ts     # Type definitions
+│   ├── ui/                     # UI components
+│   │   ├── bills/             # Bill-specific components
+│   │   ├── dashboard/         # Dashboard components
+│   │   └── skeletons.tsx      # Loading skeletons
 │   ├── layout.tsx             # Root layout component
 │   ├── page.tsx               # Homepage
 │   └── globals.css            # Global styles
-├── lib/                        # Shared utilities
-│   └── prisma.ts              # Prisma client singleton
+├── lib/                        # Root-level utilities
+│   ├── cache.ts               # Caching utilities
+│   ├── monitoring.ts          # Performance monitoring
+│   └── database-constraints.ts # Database constraint logic
 ├── prisma/                     # Database configuration
 │   ├── schema.prisma          # Database schema definition
-│   └── seed.ts                # Database seeding script
+│   ├── seed.ts                # Database seeding script
+│   └── migrations/            # Database migrations
 ├── __tests__/                  # Test suites
 │   ├── api/                   # Unit tests (mocked)
 │   ├── integration/           # Integration tests (real DB)
@@ -79,7 +95,7 @@ erDiagram
 
     BillStage {
         string id PK
-        string label
+        string label UK
         string colour
         datetime createdAt
         datetime updatedAt

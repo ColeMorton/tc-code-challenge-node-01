@@ -17,16 +17,18 @@ The project implements a **multi-layer testing approach** designed to provide co
 ```
 
 **1. Unit Tests (Base Layer)**
-- **44 test cases** with mocked dependencies
+- **Multiple test suites** with mocked dependencies
 - **Fast execution** (< 10 seconds)
 - **Isolated testing** of API logic and React components
 - **Mock-based** Prisma client for consistent behavior
+- **Frontend component testing** with React Testing Library
 
 **2. Integration Tests (Middle Layer)**
-- **9 comprehensive test cases** with real database
+- **Comprehensive test cases** with real database
 - **Database persistence validation**
 - **Business rule enforcement**
 - **Isolated test database** for safety
+- **Server action testing** with real database operations
 
 **3. E2E Tests (Top Layer)**
 - **Browser-based testing** with Playwright

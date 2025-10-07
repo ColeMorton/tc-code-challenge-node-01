@@ -164,18 +164,24 @@ class PerformanceMonitor {
     const cacheStats = this.getCacheStats()
     
     // Determine system health based on success rates and performance
-    const avgSuccessRate = Object.values(operations).reduce((acc, op) => 
-      acc + op.successRate, 0) / Object.keys(operations).length || 0
+    const operationCount = Object.keys(operations).length
     
-    const avgDuration = Object.values(operations).reduce((acc, op) => 
-      acc + op.avgDuration, 0) / Object.keys(operations).length || 0
-
     let systemHealth: 'healthy' | 'degraded' | 'unhealthy' = 'healthy'
-    if (avgSuccessRate < 0.95 || avgDuration > 1000) {
-      systemHealth = 'degraded'
-    }
-    if (avgSuccessRate < 0.90 || avgDuration > 2000) {
-      systemHealth = 'unhealthy'
+    
+    // If no operations, system is healthy (no data to judge)
+    if (operationCount > 0) {
+      const avgSuccessRate = Object.values(operations).reduce((acc, op) => 
+        acc + op.successRate, 0) / operationCount
+      
+      const avgDuration = Object.values(operations).reduce((acc, op) => 
+        acc + op.avgDuration, 0) / operationCount
+
+      if (avgSuccessRate < 0.95 || avgDuration > 1000) {
+        systemHealth = 'degraded'
+      }
+      if (avgSuccessRate < 0.90 || avgDuration > 2000) {
+        systemHealth = 'unhealthy'
+      }
     }
 
     return {

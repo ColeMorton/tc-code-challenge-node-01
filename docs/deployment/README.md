@@ -125,6 +125,9 @@ This runs both unit and integration tests with proper database isolation.
 # Unit tests only (fast, mocked)
 npm run test:unit
 
+# API tests only
+npm run test:api
+
 # Integration tests only (real database)
 npm run test:integration
 
@@ -136,6 +139,9 @@ npm run test:coverage
 
 # Watch mode for development
 npm run test:watch
+
+# Combined test suites
+npm run test:combined
 ```
 
 ### 3. E2E Testing with Playwright

@@ -168,41 +168,6 @@ Bill // Created bill with includes
 - `409 Conflict`: Bill reference already exists
 - `500 Internal Server Error`: Draft stage not found or database error
 
-#### Validate Bill Reference
-```http
-GET /api/bills/validate?billReference={reference}
-```
-
-**Description:** Validates if a bill reference is available for use.
-
-**Query Parameters:**
-- `billReference` (string, required): The bill reference to validate
-
-**Example Request:**
-```
-GET /api/bills/validate?billReference=BILL-2024-003
-```
-
-**Response:**
-```typescript
-{
-  exists: boolean    // true if reference exists in database
-  isValid: boolean   // true if reference is available for use (!exists)
-}
-```
-
-**Example Response:**
-```json
-{
-  "exists": false,
-  "isValid": true
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Missing billReference parameter
-- `500 Internal Server Error`: Database connection failure
-
 #### Assign Bill to User
 ```http
 POST /api/bills/assign
