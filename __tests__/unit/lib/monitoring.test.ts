@@ -136,8 +136,8 @@ describe('PerformanceMonitor', () => {
     })
 
     it('should maintain metrics within maxMetrics limit', () => {
-      const originalMaxMetrics = (performanceMonitor as any).maxMetrics
-      ;(performanceMonitor as any).maxMetrics = 3
+      const originalMaxMetrics = (performanceMonitor as unknown as { maxMetrics: number }).maxMetrics
+      ;(performanceMonitor as unknown as { maxMetrics: number }).maxMetrics = 3
 
       // Record 5 metrics
       for (let i = 0; i < 5; i++) {
@@ -153,7 +153,7 @@ describe('PerformanceMonitor', () => {
       expect(stats.minDuration).toBe(20) // 2nd, 3rd, 4th metrics
       expect(stats.maxDuration).toBe(40) // 4th metric
 
-      ;(performanceMonitor as any).maxMetrics = originalMaxMetrics
+      ;(performanceMonitor as unknown as { maxMetrics: number }).maxMetrics = originalMaxMetrics
     })
   })
 
