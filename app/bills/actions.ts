@@ -12,6 +12,7 @@ import {
   BillAssignmentError
 } from '@/app/lib/definitions'
 import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
+import { createError, handleError } from '@/app/lib/errors'
 
 async function validateUserCapacity(userId: string): Promise<void> {
   const userBillCount = await prisma.bill.count({
@@ -19,7 +20,7 @@ async function validateUserCapacity(userId: string): Promise<void> {
   })
 
   if (userBillCount >= 3) {
-    throw new Error(ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message)
+    throw createError(BillAssignmentError.USER_BILL_LIMIT_EXCEEDED)
   }
 }
 
@@ -50,7 +51,7 @@ export async function createBill(input: CreateBillInput) {
   const validation = validateCreateBillInput(input)
   if (!validation.success) {
     const errorMessages = Object.values(validation.errors || {}).flat()
-    throw new Error(`${ERROR_DEFINITIONS.VALIDATION_FAILED.message}: ${errorMessages.join(', ')}`)
+    throw createError(BillAssignmentError.VALIDATION_ERROR, `${ERROR_DEFINITIONS.VALIDATION_FAILED.message}: ${errorMessages.join(', ')}`)
   }
 
   const validatedInput = validation.data!
@@ -58,7 +59,7 @@ export async function createBill(input: CreateBillInput) {
   // Additional async validation for bill reference uniqueness
   const referenceValidation = await validateBillReference(validatedInput.billReference)
   if (!referenceValidation.isValid) {
-    throw new Error(referenceValidation.message || ERROR_DEFINITIONS.BILL_REFERENCE_EXISTS.message)
+    throw createError(BillAssignmentError.VALIDATION_ERROR, referenceValidation.message)
   }
 
   // CRITICAL: Validate user capacity if assigning to a user
@@ -71,7 +72,7 @@ export async function createBill(input: CreateBillInput) {
   })
 
   if (!draftStage) {
-    throw new Error(ERROR_DEFINITIONS.DRAFT_STAGE_NOT_FOUND.message)
+    throw createError(BillAssignmentError.DRAFT_STAGE_NOT_FOUND)
   }
 
   const bill = await prisma.bill.create({
@@ -136,14 +137,14 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
         })
 
         if (!userWithCount) {
-          throw new Error(ERROR_DEFINITIONS.USER_NOT_FOUND.message)
+          throw createError(BillAssignmentError.USER_NOT_FOUND)
         }
 
         // CRITICAL: Enforce 3-bill limit within transaction to prevent race conditions
         // Note: This check is within the transaction, unlike validateUserCapacity() which is used
         // in createBill(). Both enforce the same business rule but at different layers.
         if (userWithCount._count.bills >= 3) {
-          throw new Error(ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message)
+          throw createError(BillAssignmentError.USER_BILL_LIMIT_EXCEEDED)
         }
 
         // Get bill with stage information
@@ -153,15 +154,15 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
         })
 
         if (!bill) {
-          throw new Error(ERROR_DEFINITIONS.BILL_NOT_FOUND.message)
+          throw createError(BillAssignmentError.BILL_NOT_FOUND)
         }
 
         if (bill.assignedToId !== null) {
-          throw new Error(ERROR_DEFINITIONS.BILL_ALREADY_ASSIGNED.message)
+          throw createError(BillAssignmentError.BILL_ALREADY_ASSIGNED)
         }
 
         if (!['Draft', 'Submitted'].includes(bill.billStage.label)) {
-          throw new Error(ERROR_DEFINITIONS.INVALID_BILL_STAGE.message)
+          throw createError(BillAssignmentError.INVALID_BILL_STAGE)
         }
 
         // Prepare update data
@@ -235,6 +236,8 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
       })
 
       revalidatePath('/bills')
+      revalidatePath('/users')
+
       return { 
         success: true, 
         bill: result ? {
@@ -261,46 +264,12 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
         attempt: attempt + 1
       })
 
-      // Handle specific error cases with structured error codes
-      if (errorMessage.includes('User not found')) {
-        return { 
-          success: false, 
-          error: ERROR_DEFINITIONS.USER_NOT_FOUND.message,
-          errorCode: BillAssignmentError.USER_NOT_FOUND
-        }
-      }
-      if (errorMessage.includes('Bill not found')) {
-        return { 
-          success: false, 
-          error: ERROR_DEFINITIONS.BILL_NOT_FOUND.message,
-          errorCode: BillAssignmentError.BILL_NOT_FOUND
-        }
-      }
-      if (errorMessage.includes('already assigned')) {
-        return { 
-          success: false, 
-          error: ERROR_DEFINITIONS.BILL_ALREADY_ASSIGNED.message,
-          errorCode: BillAssignmentError.BILL_ALREADY_ASSIGNED
-        }
-      }
-      if (errorMessage.includes('maximum of 3 bills')) {
-        return { 
-          success: false, 
-          error: ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message,
-          errorCode: BillAssignmentError.USER_BILL_LIMIT_EXCEEDED
-        }
-      }
-      if (errorMessage.includes('Draft or Submitted stage')) {
-        return { 
-          success: false, 
-          error: ERROR_DEFINITIONS.INVALID_BILL_STAGE.message,
-          errorCode: BillAssignmentError.INVALID_BILL_STAGE
-        }
-      }
-
-      // If this is the last attempt, return the error
+      // Handle error cases with simple error handling
+      const errorResponse = handleError(error)
+      
+      // If this is the last attempt, return the structured error
       if (attempt === MAX_RETRIES - 1) {
-        return { success: false, error: errorMessage }
+        return errorResponse
       }
     }
   }

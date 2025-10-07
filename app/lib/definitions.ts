@@ -3,7 +3,7 @@
  * All type definitions, interfaces, enums, and type aliases should be defined here
  */
 
-import type { BillAssignmentError } from '@/app/lib/error-constants'
+import type { ErrorCode } from '@/app/lib/error-constants'
 
 // ============================================================================
 // CORE DOMAIN TYPES
@@ -187,7 +187,7 @@ export interface AssignBillInput {
 export interface AssignBillResult {
   success: boolean
   error?: string
-  errorCode?: BillAssignmentError
+  errorCode?: ErrorCode
   bill?: {
     id: string
     billReference: string
@@ -222,7 +222,7 @@ export { BillAssignmentError } from '@/app/lib/error-constants'
  * Detailed error information
  */
 export interface DetailedError {
-  code: BillAssignmentError
+  code: ErrorCode
   message: string
   details?: Record<string, unknown>
 }
@@ -293,7 +293,7 @@ export interface TestBillData extends CreateBillInput {
  * Test error configuration for error testing
  */
 export interface TestError {
-  code: string
+  code: ErrorCode
   message: string
   expected: boolean
   context?: Record<string, unknown>
@@ -433,12 +433,6 @@ export type ExtractData<T> = T extends { success: true; data: infer D } ? D : ne
  * Extract the error type from a Result type
  */
 export type ExtractError<T> = T extends { success: false; error: infer E } ? E : never
-
-/**
- * Type-safe error codes for better error handling
- * Re-exported from error-constants.ts for consistency
- */
-export type { BillAssignmentErrorCode } from '@/app/lib/error-constants'
 
 /**
  * Generic API response wrapper

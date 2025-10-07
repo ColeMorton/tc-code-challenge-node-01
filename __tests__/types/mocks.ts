@@ -17,6 +17,7 @@ export type {
   Optional,
   RequiredFields,
   ExtractData,
-  ExtractError,
-  BillAssignmentErrorCode
+  ExtractError
 } from '@/app/lib/definitions'
+
+export type { BillAssignmentErrorCode } from '@/app/lib/error-constants'

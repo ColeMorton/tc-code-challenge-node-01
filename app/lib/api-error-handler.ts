@@ -1,71 +1,41 @@
 /**
- * Standardized API error handling
- * Provides consistent error responses across all API routes
+ * Simple API Error Handler
  */
 
 import { NextResponse } from 'next/server'
-import { getErrorDefinition, getHttpStatus } from './error-constants'
+import { AppError } from './errors'
+import type { ErrorCode } from './error-constants'
 
 export interface ApiErrorResponse {
   error: string
-  code?: string
+  code?: ErrorCode
   status: number
 }
 
 /**
- * Create a standardized error response
- */
-export function createErrorResponse(
-  errorCode: string,
-  customMessage?: string
-): NextResponse<ApiErrorResponse> {
-  const definition = getErrorDefinition(errorCode)
-  const status = getHttpStatus(errorCode)
-  const message = customMessage || definition?.message || 'An unexpected error occurred'
-  
-  return NextResponse.json(
-    {
-      error: message,
-      code: errorCode,
-      status
-    },
-    { status }
-  )
-}
-
-/**
- * Handle common error patterns and return appropriate responses
+ * Handle API errors with minimal code
  */
 export function handleApiError(error: unknown): NextResponse<ApiErrorResponse> {
-  if (error instanceof Error) {
-    const message = error.message
-    
-    // Map common error messages to error codes
-    if (message.includes('User not found')) {
-      return createErrorResponse('USER_NOT_FOUND')
-    }
-    if (message.includes('Bill not found')) {
-      return createErrorResponse('BILL_NOT_FOUND')
-    }
-    if (message.includes('already assigned')) {
-      return createErrorResponse('BILL_ALREADY_ASSIGNED')
-    }
-    if (message.includes('maximum of 3 bills')) {
-      return createErrorResponse('USER_BILL_LIMIT_EXCEEDED')
-    }
-    if (message.includes('Draft or Submitted stage')) {
-      return createErrorResponse('INVALID_BILL_STAGE')
-    }
-    if (message.includes('concurrent updates')) {
-      return createErrorResponse('CONCURRENT_UPDATE')
-    }
-    if (message.includes('Database') || message.includes('Prisma')) {
-      return createErrorResponse('DATABASE_ERROR')
-    }
+  if (error instanceof AppError) {
+    return NextResponse.json(
+      {
+        error: error.message,
+        code: error.code,
+        status: error.httpStatus
+      },
+      { status: error.httpStatus }
+    )
   }
   
-  // Default to unknown error
-  return createErrorResponse('UNKNOWN_ERROR')
+  // Handle other errors
+  return NextResponse.json(
+    {
+      error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      code: 'UNKNOWN_ERROR' as ErrorCode,
+      status: 500
+    },
+    { status: 500 }
+  )
 }
 
 /**
