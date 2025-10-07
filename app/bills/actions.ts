@@ -118,7 +118,7 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
   if (!capacityCheck.canAssign) {
     return {
       success: false,
-      error: capacityCheck.reason || 'User cannot be assigned more bills'
+      error: capacityCheck.reason || ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message
     }
   }
 

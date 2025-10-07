@@ -1,10 +1,8 @@
 // Client-side form validation types and functions
 import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
+import type { BillFormData, FormFieldError } from '@/app/lib/definitions'
 
-export interface FormFieldError {
-  message: string
-  type?: string
-}
+// FormFieldError is imported from definitions.ts
 
 export interface FormValidationState {
   billReference: FormFieldError | null
@@ -13,11 +11,8 @@ export interface FormValidationState {
   isValid: boolean
 }
 
-export interface BillFormData {
-  billReference: string
-  billDate: string
-  assignedToId?: string
-}
+// Re-export BillFormData for backward compatibility
+export type { BillFormData } from '@/app/lib/definitions'
 
 // Initial validation state
 export const initialValidationState: FormValidationState = {

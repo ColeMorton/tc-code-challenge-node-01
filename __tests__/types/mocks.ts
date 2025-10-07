@@ -8,5 +8,15 @@ export type {
   MockPrismaBill,
   MockPrismaBillStage,
   MockPrismaBillWithRelations,
-  MockPrismaClient
+  MockPrismaClient,
+  TestScenario,
+  TestBillData,
+  TestError,
+  TestUserData,
+  TestDatabaseState,
+  Optional,
+  RequiredFields,
+  ExtractData,
+  ExtractError,
+  BillAssignmentErrorCode
 } from '@/app/lib/definitions'

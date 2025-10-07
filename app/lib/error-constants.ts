@@ -176,3 +176,35 @@ export function getHttpStatus(errorCode: string): number {
   const definition = getErrorDefinition(errorCode)
   return definition?.httpStatus ?? 500
 }
+
+// ============================================================================
+// TYPE-SAFE ERROR CODES
+// ============================================================================
+
+/**
+ * Type-safe error codes for bill assignment operations
+ */
+export const BILL_ASSIGNMENT_ERROR_CODES = {
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  BILL_NOT_FOUND: 'BILL_NOT_FOUND',
+  BILL_ALREADY_ASSIGNED: 'BILL_ALREADY_ASSIGNED',
+  USER_BILL_LIMIT_EXCEEDED: 'USER_BILL_LIMIT_EXCEEDED',
+  INVALID_BILL_STAGE: 'INVALID_BILL_STAGE',
+  CONCURRENT_UPDATE: 'CONCURRENT_UPDATE',
+  VALIDATION_ERROR: 'VALIDATION_ERROR'
+} as const
+
+export type BillAssignmentErrorCode = typeof BILL_ASSIGNMENT_ERROR_CODES[keyof typeof BILL_ASSIGNMENT_ERROR_CODES]
+
+/**
+ * Bill assignment error enum for runtime usage
+ */
+export enum BillAssignmentError {
+  USER_NOT_FOUND = 'USER_NOT_FOUND',
+  BILL_NOT_FOUND = 'BILL_NOT_FOUND',
+  BILL_ALREADY_ASSIGNED = 'BILL_ALREADY_ASSIGNED',
+  USER_BILL_LIMIT_EXCEEDED = 'USER_BILL_LIMIT_EXCEEDED',
+  INVALID_BILL_STAGE = 'INVALID_BILL_STAGE',
+  CONCURRENT_UPDATE = 'CONCURRENT_UPDATE',
+  VALIDATION_ERROR = 'VALIDATION_ERROR'
+}

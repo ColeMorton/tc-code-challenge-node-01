@@ -3,20 +3,24 @@ import { prisma } from '@/app/lib/prisma'
 import type { MockPrismaClient } from '@/app/lib/definitions'
 import { revalidatePath } from 'next/cache'
 
-// Mock Prisma
+// Mock Prisma with proper typing
 jest.mock('@/app/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     bill: {
+      findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       count: jest.fn(),
     },
     billStage: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
     $transaction: jest.fn(),
   }

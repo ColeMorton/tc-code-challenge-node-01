@@ -3,6 +3,8 @@
  * All type definitions, interfaces, enums, and type aliases should be defined here
  */
 
+import type { BillAssignmentError } from '@/app/lib/error-constants'
+
 // ============================================================================
 // CORE DOMAIN TYPES
 // ============================================================================
@@ -205,13 +207,6 @@ export interface AssignBillResult {
   }
 }
 
-/**
- * Validation result for API operations
- */
-export interface ValidationResult {
-  isValid: boolean
-  message?: string
-}
 
 // ============================================================================
 // ERROR HANDLING TYPES
@@ -219,16 +214,9 @@ export interface ValidationResult {
 
 /**
  * Bill assignment error codes
+ * Re-exported from error-constants.ts for consistency
  */
-export enum BillAssignmentError {
-  USER_NOT_FOUND = 'USER_NOT_FOUND',
-  BILL_NOT_FOUND = 'BILL_NOT_FOUND',
-  BILL_ALREADY_ASSIGNED = 'BILL_ALREADY_ASSIGNED',
-  USER_BILL_LIMIT_EXCEEDED = 'USER_BILL_LIMIT_EXCEEDED',
-  INVALID_BILL_STAGE = 'INVALID_BILL_STAGE',
-  CONCURRENT_UPDATE = 'CONCURRENT_UPDATE',
-  VALIDATION_ERROR = 'VALIDATION_ERROR'
-}
+export { BillAssignmentError } from '@/app/lib/error-constants'
 
 /**
  * Detailed error information
@@ -281,6 +269,58 @@ export interface CacheMetric {
 // ============================================================================
 // TESTING TYPES
 // ============================================================================
+
+/**
+ * Test scenario configuration for consistent test setup
+ */
+export interface TestScenario<T> {
+  name: string
+  setup: () => Promise<T>
+  teardown: () => Promise<void>
+  data: T
+}
+
+/**
+ * Test bill data with expected outcomes
+ */
+export interface TestBillData extends CreateBillInput {
+  expectedStage: string
+  expectedUser?: string
+  shouldSucceed: boolean
+}
+
+/**
+ * Test error configuration for error testing
+ */
+export interface TestError {
+  code: string
+  message: string
+  expected: boolean
+  context?: Record<string, unknown>
+}
+
+/**
+ * Test user data with bill capacity information
+ */
+export interface TestUserData extends User {
+  currentBillCount: number
+  maxCapacity: number
+  canAcceptMore: boolean
+}
+
+/**
+ * Test database state for integration tests
+ */
+export interface TestDatabaseState {
+  users: TestUserData[]
+  bills: TestBillData[]
+  billStages: BillStage[]
+  expectedCounts: {
+    totalBills: number
+    billsByStage: Record<string, number>
+    billsByUser: Record<string, number>
+  }
+}
 
 /**
  * Mock user for testing
@@ -373,6 +413,32 @@ export interface MockPrismaClient {
 // ============================================================================
 // UTILITY TYPES
 // ============================================================================
+
+/**
+ * Make specific fields optional in a type
+ */
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+/**
+ * Make specific fields required in a type
+ */
+export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>
+
+/**
+ * Extract the data type from a Result type
+ */
+export type ExtractData<T> = T extends { success: true; data: infer D } ? D : never
+
+/**
+ * Extract the error type from a Result type
+ */
+export type ExtractError<T> = T extends { success: false; error: infer E } ? E : never
+
+/**
+ * Type-safe error codes for better error handling
+ * Re-exported from error-constants.ts for consistency
+ */
+export type { BillAssignmentErrorCode } from '@/app/lib/error-constants'
 
 /**
  * Generic API response wrapper
