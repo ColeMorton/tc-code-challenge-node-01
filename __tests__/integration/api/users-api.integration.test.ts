@@ -1,5 +1,5 @@
 import { GET } from '@/app/api/users/route'
-import { resetDatabase, testPrisma } from '../testUtils'
+import { resetDatabase, testPrisma } from '@/__tests__/integration/testUtils'
 import type { User } from '@/app/lib/definitions'
 
 describe('Users API Integration Tests', () => {

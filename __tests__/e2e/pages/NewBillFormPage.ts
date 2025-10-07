@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test'
-import { waitForPageLoad, fillFieldAndWait, waitForErrorMessage } from '../utils/test-utils'
+import { waitForPageLoad, fillFieldAndWait, waitForErrorMessage } from '@/__tests__/e2e/utils/test-utils'
 
 export class NewBillFormPage {
   readonly page: Page

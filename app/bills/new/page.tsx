@@ -1,7 +1,9 @@
+import { Suspense } from 'react'
 import { prisma } from '@/app/lib/prisma'
-import BillForm from '../../ui/bills/form'
+import BillForm from '@/app/ui/bills/form'
+import { BillFormSkeleton } from '@/app/ui/skeletons'
 
-export default async function NewBillPage() {
+async function BillFormWrapper() {
   const users = await prisma.user.findMany({
     include: {
       _count: {
@@ -13,6 +15,10 @@ export default async function NewBillPage() {
     }
   })
 
+  return <BillForm users={users} />
+}
+
+export default function NewBillPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
@@ -22,7 +28,9 @@ export default async function NewBillPage() {
         </header>
 
         <main>
-          <BillForm users={users} />
+          <Suspense fallback={<BillFormSkeleton />}>
+            <BillFormWrapper />
+          </Suspense>
         </main>
       </div>
     </div>

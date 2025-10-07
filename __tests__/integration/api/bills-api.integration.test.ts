@@ -1,5 +1,5 @@
-import { testPrisma, resetDatabase, seedRequiredData, getTestData, createTestBill } from '../testUtils'
-import { createBill, validateBillReference, assignBillAction } from '../testActions'
+import { testPrisma, resetDatabase, seedRequiredData, getTestData, createTestBill } from '@/__tests__/integration/testUtils'
+import { createBill, validateBillReference, assignBillAction } from '@/__tests__/integration/testActions'
 
 describe('Bills API Integration Tests', () => {
   beforeEach(async () => {

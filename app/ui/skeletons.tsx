@@ -153,3 +153,41 @@ export function BillsDashboardSkeleton() {
     </div>
   );
 }
+
+export function BillFormSkeleton() {
+  return (
+    <div className="bg-white py-8 px-6 shadow rounded-lg">
+      <div className="space-y-6">
+        {/* Error message skeleton */}
+        <div className={`${shimmer} relative overflow-hidden h-12 w-full bg-gray-100 rounded-md`} />
+        
+        {/* Bill Reference field skeleton */}
+        <div>
+          <div className={`${shimmer} relative overflow-hidden h-4 w-32 bg-gray-100 rounded mb-2`} />
+          <div className={`${shimmer} relative overflow-hidden h-10 w-full bg-gray-100 rounded-md`} />
+          <div className={`${shimmer} relative overflow-hidden h-4 w-48 bg-gray-100 rounded mt-1`} />
+        </div>
+        
+        {/* Bill Date field skeleton */}
+        <div>
+          <div className={`${shimmer} relative overflow-hidden h-4 w-24 bg-gray-100 rounded mb-2`} />
+          <div className={`${shimmer} relative overflow-hidden h-10 w-full bg-gray-100 rounded-md`} />
+          <div className={`${shimmer} relative overflow-hidden h-4 w-36 bg-gray-100 rounded mt-1`} />
+        </div>
+        
+        {/* Assigned To field skeleton */}
+        <div>
+          <div className={`${shimmer} relative overflow-hidden h-4 w-40 bg-gray-100 rounded mb-2`} />
+          <div className={`${shimmer} relative overflow-hidden h-10 w-full bg-gray-100 rounded-md`} />
+          <div className={`${shimmer} relative overflow-hidden h-4 w-56 bg-gray-100 rounded mt-1`} />
+        </div>
+        
+        {/* Button group skeleton */}
+        <div className="flex space-x-4">
+          <div className={`${shimmer} relative overflow-hidden h-10 flex-1 bg-gray-100 rounded-md`} />
+          <div className={`${shimmer} relative overflow-hidden h-10 flex-1 bg-gray-100 rounded-md`} />
+        </div>
+      </div>
+    </div>
+  );
+}

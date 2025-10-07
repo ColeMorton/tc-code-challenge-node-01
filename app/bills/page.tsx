@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { getBills, getUsers } from '@/app/lib/data'
-import BillsDashboard from '../ui/bills/dashboard'
+import BillsDashboard from '@/app/ui/bills/dashboard'
 import { BillsDashboardSkeleton } from '@/app/ui/skeletons'
 
 async function BillsDashboardWrapper() {

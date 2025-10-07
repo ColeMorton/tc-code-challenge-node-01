@@ -1,6 +1,6 @@
 import { GET } from '@/app/api/users/route'
 import { prisma } from '@/app/lib/prisma'
-import type { MockApiUser } from '../types/mocks'
+import type { MockApiUser } from '@/__tests__/types/mocks'
 
 // Mock Prisma
 jest.mock('@/app/lib/prisma', () => ({

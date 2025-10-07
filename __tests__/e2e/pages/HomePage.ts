@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test'
-import { waitForPageLoad } from '../utils/test-utils'
+import { waitForPageLoad } from '@/__tests__/e2e/utils/test-utils'
 
 export class HomePage {
   readonly page: Page
