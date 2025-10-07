@@ -1,30 +1,14 @@
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/bills/assign/route'
-import { prisma } from '@/app/lib/prisma'
-import type { MockPrismaClient } from '../types/mocks'
+import { assignBillAction } from '@/app/bills/actions'
+import { BillAssignmentError } from '@/app/lib/definitions'
 
-// Mock Prisma
-jest.mock('@/app/lib/prisma', () => ({
-  prisma: {
-    user: {
-      findUnique: jest.fn(),
-    },
-    bill: {
-      count: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    billStage: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-    },
-    $transaction: jest.fn(),
-  }
+// Mock the server action
+jest.mock('@/app/bills/actions', () => ({
+  assignBillAction: jest.fn()
 }))
 
-const mockPrisma = prisma as unknown as MockPrismaClient
+const mockAssignBillAction = assignBillAction as jest.MockedFunction<typeof assignBillAction>
 
 // Mock console.error to suppress expected error logs during testing
 const originalConsoleError = console.error
@@ -34,11 +18,6 @@ describe('/api/bills/assign', () => {
     jest.clearAllMocks()
     // Mock console.error to suppress expected error logs during testing
     console.error = jest.fn()
-
-    // Mock $transaction to execute the callback with the same mocked prisma client
-    mockPrisma.$transaction = jest.fn().mockImplementation(async (callback) => {
-      return callback(mockPrisma)
-    })
   })
 
   afterEach(() => {
@@ -53,38 +32,34 @@ describe('/api/bills/assign', () => {
         billId: 'bill1'
       }
 
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      ]
       const mockBill = {
         id: 'bill1',
         billReference: 'BILL-001',
         billDate: new Date('2024-01-01'),
-        billStageId: 'submitted-stage',
-        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
-        submittedAt: new Date('2024-01-01'), // Already has submittedAt
-        assignedToId: null // Not yet assigned
-      }
-      const mockUpdatedBill = {
-        ...mockBill,
         assignedToId: 'user1',
-        assignedTo: mockUser,
-        billDate: new Date('2024-01-01'),
         billStageId: 'submitted-stage',
-        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
+        assignedTo: {
+          id: 'user1',
+          name: 'John Doe',
+          email: 'john@example.com'
+        },
+        billStage: {
+          id: 'submitted-stage',
+          label: 'Submitted',
+          colour: '#3B82F6'
+        }
       }
 
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(2) // User has 2 bills currently
-      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
-      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
+      // Mock successful server action response
+      mockAssignBillAction.mockResolvedValue({
+        success: true,
+        bill: mockBill
+      })
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
       })
 
       const response = await POST(request)
@@ -93,209 +68,29 @@ describe('/api/bills/assign', () => {
       expect(response.status).toBe(200)
       expect(data.message).toBe('Bill assigned successfully')
       expect(data.bill.assignedTo.id).toBe('user1')
-      expect(mockPrisma.bill.update).toHaveBeenCalledWith({
-        where: { id: 'bill1' },
-        data: {
-          assignedToId: 'user1'
-        },
-        include: {
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          billStage: {
-            select: {
-              id: true,
-              label: true,
-              colour: true
-            }
-          }
-        }
-      })
-    })
-
-    it('should prevent assignment when user already has 3 bills', async () => {
-      const requestBody = {
+      expect(mockAssignBillAction).toHaveBeenCalledWith({
         userId: 'user1',
         billId: 'bill1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(3) // User already has 3 bills
-      mockPrisma.billStage.findMany.mockResolvedValue([])
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(409)
-      expect(data.error).toBe('User already has the maximum of 3 bills assigned')
-    })
-
-    it('should reject assignment of non-assignable stage bills', async () => {
-      const requestBody = {
-        userId: 'user1',
-        billId: 'bill1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      ]
-      const mockBill = {
-        id: 'bill1',
-        billReference: 'BILL-001',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'approved-stage',
-        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' }, // Not assignable stage
-        assignedToId: null
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
-      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(400)
-      expect(data.error).toBe('Bill must be in Draft or Submitted stage to be assigned')
-    })
-
-    it('should assign a specific Draft stage bill to a user successfully', async () => {
-      const requestBody = {
-        userId: 'user1',
-        billId: 'bill1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      ]
-      const mockBill = {
-        id: 'bill1',
-        billReference: 'BILL-001',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        submittedAt: null,
-        assignedToId: null
-      }
-      const mockUpdatedBill = {
-        ...mockBill,
-        assignedToId: 'user1',
-        assignedTo: mockUser,
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#9CA3AF' }
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1) // User has 1 bill currently
-      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
-      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.message).toBe('Bill assigned successfully')
-      expect(data.bill.assignedTo.id).toBe('user1')
-      expect(mockPrisma.bill.update).toHaveBeenCalledWith({
-        where: { id: 'bill1' },
-        data: {
-          assignedToId: 'user1'
-          // No submittedAt for Draft stage bills
-        },
-        include: {
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          billStage: {
-            select: {
-              id: true,
-              label: true,
-              colour: true
-            }
-          }
-        }
       })
     })
 
-    it('should reject assignment of bills in non-assignable stages', async () => {
+    it('should handle user not found error', async () => {
       const requestBody = {
-        userId: 'user1',
+        userId: 'nonexistent',
         billId: 'bill1'
       }
 
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      ]
-      const mockBill = {
-        id: 'bill1',
-        billReference: 'BILL-001',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'approved-stage',
-        billStage: { id: 'approved-stage', label: 'Approved', colour: '#10B981' }, // Not assignable
-        assignedToId: null
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
-      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
+      // Mock server action error response
+      mockAssignBillAction.mockResolvedValue({
+        success: false,
+        error: 'User not found',
+        errorCode: BillAssignmentError.USER_NOT_FOUND
       })
 
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(400)
-      expect(data.error).toBe('Bill must be in Draft or Submitted stage to be assigned')
-    })
-
-
-    it('should handle missing user', async () => {
-      const requestBody = {
-        userId: 'non-existent-user',
-        billId: 'bill1'
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(null)
-
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
       })
 
       const response = await POST(request)
@@ -305,12 +100,145 @@ describe('/api/bills/assign', () => {
       expect(data.error).toBe('User not found')
     })
 
-    it('should validate required userId field', async () => {
-      const requestBody = { billId: 'bill1' }
+    it('should handle user bill limit exceeded error', async () => {
+      const requestBody = {
+        userId: 'user1',
+        billId: 'bill1'
+      }
+
+      // Mock server action error response
+      mockAssignBillAction.mockResolvedValue({
+        success: false,
+        error: 'User already has the maximum of 3 bills assigned',
+        errorCode: BillAssignmentError.USER_BILL_LIMIT_EXCEEDED
+      })
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data.error).toBe('User already has the maximum of 3 bills assigned')
+    })
+
+    it('should handle bill not found error', async () => {
+      const requestBody = {
+        userId: 'user1',
+        billId: 'nonexistent'
+      }
+
+      // Mock server action error response
+      mockAssignBillAction.mockResolvedValue({
+        success: false,
+        error: 'Bill not found',
+        errorCode: BillAssignmentError.BILL_NOT_FOUND
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(404)
+      expect(data.error).toBe('Bill not found')
+    })
+
+    it('should handle bill already assigned error', async () => {
+      const requestBody = {
+        userId: 'user1',
+        billId: 'bill1'
+      }
+
+      // Mock server action error response
+      mockAssignBillAction.mockResolvedValue({
+        success: false,
+        error: 'Bill is already assigned',
+        errorCode: BillAssignmentError.BILL_ALREADY_ASSIGNED
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(404)
+      expect(data.error).toBe('Bill is already assigned')
+    })
+
+    it('should handle invalid bill stage error', async () => {
+      const requestBody = {
+        userId: 'user1',
+        billId: 'bill1'
+      }
+
+      // Mock server action error response
+      mockAssignBillAction.mockResolvedValue({
+        success: false,
+        error: 'Bill must be in Draft or Submitted stage to be assigned',
+        errorCode: BillAssignmentError.INVALID_BILL_STAGE
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('Bill must be in Draft or Submitted stage to be assigned')
+    })
+
+    it('should handle concurrent update error', async () => {
+      const requestBody = {
+        userId: 'user1',
+        billId: 'bill1'
+      }
+
+      // Mock server action error response
+      mockAssignBillAction.mockResolvedValue({
+        success: false,
+        error: 'Failed to assign bill due to concurrent updates. Please try again.',
+        errorCode: BillAssignmentError.CONCURRENT_UPDATE
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(503)
+      expect(data.error).toBe('Failed to assign bill due to concurrent updates. Please try again.')
+    })
+
+    it('should handle missing userId', async () => {
+      const requestBody = {
+        billId: 'bill1'
+      }
+
+      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
       })
 
       const response = await POST(request)
@@ -318,14 +246,18 @@ describe('/api/bills/assign', () => {
 
       expect(response.status).toBe(400)
       expect(data.error).toBe('userId is required')
+      expect(mockAssignBillAction).not.toHaveBeenCalled()
     })
 
-    it('should validate required billId field', async () => {
-      const requestBody = { userId: 'user1' }
+    it('should handle missing billId', async () => {
+      const requestBody = {
+        userId: 'user1'
+      }
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
       })
 
       const response = await POST(request)
@@ -333,24 +265,22 @@ describe('/api/bills/assign', () => {
 
       expect(response.status).toBe(400)
       expect(data.error).toBe('billId is required')
+      expect(mockAssignBillAction).not.toHaveBeenCalled()
     })
 
-
-    it('should handle database errors during assignment', async () => {
+    it('should handle server action throwing an error', async () => {
       const requestBody = {
         userId: 'user1',
         billId: 'bill1'
       }
 
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.bill.findUnique.mockRejectedValue(new Error('Database connection failed'))
+      // Mock server action throwing an error
+      mockAssignBillAction.mockRejectedValue(new Error('Database connection failed'))
 
       const request = new NextRequest('http://localhost:3000/api/bills/assign', {
         method: 'POST',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' }
       })
 
       const response = await POST(request)
@@ -359,193 +289,5 @@ describe('/api/bills/assign', () => {
       expect(response.status).toBe(500)
       expect(data.error).toBe('Failed to assign bill')
     })
-
-    it('should retry on race condition and eventually succeed', async () => {
-      const requestBody = {
-        userId: 'user1',
-        billId: 'bill1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      ]
-      const mockBill = {
-        id: 'bill1',
-        billReference: 'BILL-001',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        submittedAt: null,
-        assignedToId: null
-      }
-      const mockUpdatedBill = {
-        ...mockBill,
-        assignedToId: 'user1',
-        assignedTo: mockUser,
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#9CA3AF' }
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
-      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
-
-      let callCount = 0
-      mockPrisma.bill.count.mockImplementation(async () => {
-        callCount++
-        if (callCount === 2) {
-          return 4
-        }
-        return 2
-      })
-
-      mockPrisma.$transaction = jest.fn().mockImplementation(async (callback) => {
-        const result = await callback(mockPrisma)
-        return result
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.message).toBe('Bill assigned successfully')
-      expect(mockPrisma.bill.count.mock.calls.length).toBeGreaterThanOrEqual(4)
-    })
-
-    it('should fail after max retries when race condition persists', async () => {
-      const requestBody = {
-        userId: 'user1',
-        billId: 'bill1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      ]
-      const mockBill = {
-        id: 'bill1',
-        billReference: 'BILL-001',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'draft-stage',
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        submittedAt: null,
-        assignedToId: null
-      }
-      const mockUpdatedBill = {
-        ...mockBill,
-        assignedToId: 'user1',
-        assignedTo: mockUser,
-        billStage: { id: 'draft-stage', label: 'Draft', colour: '#9CA3AF' }
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
-      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
-
-      let callCount = 0
-      mockPrisma.bill.count.mockImplementation(async () => {
-        callCount++
-        if (callCount % 2 === 0) {
-          return 4
-        }
-        return 2
-      })
-
-      mockPrisma.$transaction = jest.fn().mockImplementation(async (callback) => {
-        const result = await callback(mockPrisma)
-        return result
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(503)
-      expect(data.error).toContain('concurrent updates')
-    })
-
-    it('should handle submitted bills without submittedAt and set timestamp', async () => {
-      const requestBody = {
-        userId: 'user1',
-        billId: 'bill1'
-      }
-
-      const mockUser = { id: 'user1', name: 'John Doe', email: 'john@example.com' }
-      const mockAssignableStages = [
-        { id: 'draft-stage', label: 'Draft', colour: '#6B7280' },
-        { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      ]
-      const mockBill = {
-        id: 'bill1',
-        billReference: 'BILL-001',
-        billDate: new Date('2024-01-01'),
-        billStageId: 'submitted-stage',
-        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' },
-        submittedAt: null, // No submittedAt timestamp yet
-        assignedToId: null
-      }
-      const mockUpdatedBill = {
-        ...mockBill,
-        assignedToId: 'user1',
-        assignedTo: mockUser,
-        billDate: new Date('2024-01-01'),
-        billStageId: 'submitted-stage',
-        billStage: { id: 'submitted-stage', label: 'Submitted', colour: '#3B82F6' }
-      }
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
-      mockPrisma.bill.count.mockResolvedValue(1)
-      mockPrisma.billStage.findMany.mockResolvedValue(mockAssignableStages)
-      mockPrisma.bill.findUnique.mockResolvedValue(mockBill)
-      mockPrisma.bill.update.mockResolvedValue(mockUpdatedBill)
-
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.message).toBe('Bill assigned successfully')
-      expect(mockPrisma.bill.update).toHaveBeenCalledWith({
-        where: { id: 'bill1' },
-        data: {
-          assignedToId: 'user1',
-          submittedAt: expect.any(Date)
-        },
-        include: {
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          billStage: {
-            select: {
-              id: true,
-              label: true,
-              colour: true
-            }
-          }
-        }
-      })
-    })
-
   })
 })

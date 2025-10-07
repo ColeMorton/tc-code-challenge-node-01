@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/prisma'
-
-const MAX_RETRIES = 3
+import { assignBillAction } from '@/app/bills/actions'
+import { BillAssignmentError } from '@/app/lib/definitions'
 
 export async function POST(request: Request) {
   try {
@@ -23,141 +22,37 @@ export async function POST(request: Request) {
       )
     }
 
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        const updatedBill = await prisma.$transaction(async (tx) => {
-      // Check if user exists
-      const user = await tx.user.findUnique({
-        where: { id: userId }
-      })
+    // Delegate to server action - eliminates duplication
+    const result = await assignBillAction({ userId, billId })
 
-      if (!user) {
-        throw new Error('User not found')
+    if (!result.success) {
+      // Map server action error codes to HTTP status codes
+      let status = 400
+      if (result.errorCode === BillAssignmentError.USER_NOT_FOUND || 
+          result.errorCode === BillAssignmentError.BILL_NOT_FOUND ||
+          result.errorCode === BillAssignmentError.BILL_ALREADY_ASSIGNED) {
+        status = 404
+      } else if (result.errorCode === BillAssignmentError.USER_BILL_LIMIT_EXCEEDED) {
+        status = 409
+      } else if (result.errorCode === BillAssignmentError.INVALID_BILL_STAGE) {
+        status = 400
+      } else if (result.errorCode === BillAssignmentError.CONCURRENT_UPDATE) {
+        status = 503
       }
 
-      // Count current bills assigned to this user
-      const currentBillCount = await tx.bill.count({
-        where: { assignedToId: userId }
-      })
-
-      if (currentBillCount >= 3) {
-        throw new Error('User already has the maximum of 3 bills assigned')
-      }
-
-      // Find the specific bill
-      const bill = await tx.bill.findUnique({
-        where: { id: billId },
-        include: {
-          billStage: true
-        }
-      })
-
-      if (!bill) {
-        throw new Error('Bill not found')
-      }
-
-      if (bill.assignedToId !== null) {
-        throw new Error('Bill is already assigned')
-      }
-
-      if (!['Draft', 'Submitted'].includes(bill.billStage.label)) {
-        throw new Error('Bill must be in Draft or Submitted stage to be assigned')
-      }
-
-      // Update the bill assignment
-      const updateData: { assignedToId: string; submittedAt?: Date } = {
-        assignedToId: userId
-      }
-
-      if (bill.billStage.label === 'Submitted' && !bill.submittedAt) {
-        updateData.submittedAt = new Date()
-      }
-
-      const updated = await tx.bill.update({
-        where: { id: bill.id },
-        data: updateData,
-        include: {
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          billStage: {
-            select: {
-              id: true,
-              label: true,
-              colour: true
-            }
-          }
-        }
-      })
-
-      // OPTIMISTIC LOCK: Verify the constraint after update
-      const finalBillCount = await tx.bill.count({
-        where: { assignedToId: userId }
-      })
-
-      if (finalBillCount > 3) {
-        throw new Error('RETRY_RACE_CONDITION')
-      }
-
-      return updated
-        })
-
-        return NextResponse.json({
-          message: 'Bill assigned successfully',
-          bill: updatedBill
-        })
-
-      } catch (error) {
-        if (error instanceof Error && error.message === 'RETRY_RACE_CONDITION') {
-          continue
-        }
-
-        throw error
-      }
+      return NextResponse.json(
+        { error: result.error },
+        { status }
+      )
     }
 
-    throw new Error('Failed to assign bill due to concurrent updates. Please try again.')
+    return NextResponse.json({
+      message: 'Bill assigned successfully',
+      bill: result.bill
+    })
 
   } catch (error) {
     console.error('Failed to assign bill:', error)
-
-    if (error instanceof Error) {
-      if (error.message === 'User not found') {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 404 }
-        )
-      }
-      if (error.message === 'User already has the maximum of 3 bills assigned') {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 409 }
-        )
-      }
-      if (error.message === 'Bill not found' || error.message === 'Bill is already assigned') {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 404 }
-        )
-      }
-      if (error.message === 'Bill must be in Draft or Submitted stage to be assigned') {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 400 }
-        )
-      }
-      if (error.message.includes('concurrent updates')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 503 }
-        )
-      }
-    }
-
     return NextResponse.json(
       { error: 'Failed to assign bill' },
       { status: 500 }
