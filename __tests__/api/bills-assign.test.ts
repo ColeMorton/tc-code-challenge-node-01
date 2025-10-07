@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/bills/assign/route'
 import { assignBillAction } from '@/app/bills/actions'
 import { BillAssignmentError } from '@/app/lib/definitions'
+import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
 
 // Mock the server action
 jest.mock('@/app/bills/actions', () => ({
@@ -97,7 +98,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data.error).toBe('User not found')
+      expect(data.error).toBe(ERROR_DEFINITIONS.USER_NOT_FOUND.message)
     })
 
     it('should handle user bill limit exceeded error', async () => {
@@ -123,7 +124,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(409)
-      expect(data.error).toBe('User already has the maximum of 3 bills assigned')
+      expect(data.error).toBe(ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message)
     })
 
     it('should handle bill not found error', async () => {
@@ -149,7 +150,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data.error).toBe('Bill not found')
+      expect(data.error).toBe(ERROR_DEFINITIONS.BILL_NOT_FOUND.message)
     })
 
     it('should handle bill already assigned error', async () => {
@@ -174,8 +175,8 @@ describe('/api/bills/assign', () => {
       const response = await POST(request)
       const data = await response.json()
 
-      expect(response.status).toBe(404)
-      expect(data.error).toBe('Bill is already assigned')
+      expect(response.status).toBe(409)
+      expect(data.error).toBe(ERROR_DEFINITIONS.BILL_ALREADY_ASSIGNED.message)
     })
 
     it('should handle invalid bill stage error', async () => {
@@ -201,7 +202,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('Bill must be in Draft or Submitted stage to be assigned')
+      expect(data.error).toBe(ERROR_DEFINITIONS.INVALID_BILL_STAGE.message)
     })
 
     it('should handle concurrent update error', async () => {
@@ -227,7 +228,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(503)
-      expect(data.error).toBe('Failed to assign bill due to concurrent updates. Please try again.')
+      expect(data.error).toBe(ERROR_DEFINITIONS.CONCURRENT_UPDATE.message)
     })
 
     it('should handle missing userId', async () => {
@@ -245,7 +246,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('userId is required')
+      expect(data.error).toBe(ERROR_DEFINITIONS.USER_ID_REQUIRED.message)
       expect(mockAssignBillAction).not.toHaveBeenCalled()
     })
 
@@ -264,7 +265,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('billId is required')
+      expect(data.error).toBe(ERROR_DEFINITIONS.BILL_ID_REQUIRED.message)
       expect(mockAssignBillAction).not.toHaveBeenCalled()
     })
 
@@ -287,7 +288,7 @@ describe('/api/bills/assign', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to assign bill')
+      expect(data.error).toBe(ERROR_DEFINITIONS.FAILED_TO_ASSIGN_BILL.message)
     })
   })
 })

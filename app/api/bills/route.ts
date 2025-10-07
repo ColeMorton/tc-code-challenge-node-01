@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
+import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
 
 export async function GET() {
   try {
@@ -29,8 +30,8 @@ export async function GET() {
   } catch (error) {
     console.error('Failed to fetch bills:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch bills' },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : ERROR_DEFINITIONS.FAILED_TO_FETCH_BILLS.message },
+      { status: ERROR_DEFINITIONS.FAILED_TO_FETCH_BILLS.httpStatus }
     )
   }
 }

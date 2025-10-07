@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { assignBillAction } from '@/app/bills/actions'
-import { BillAssignmentError } from '@/app/lib/definitions'
+import { ERROR_DEFINITIONS, getHttpStatus } from '@/app/lib/error-constants'
 
 export async function POST(request: Request) {
   try {
@@ -10,15 +10,15 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!userId) {
       return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
+        { error: ERROR_DEFINITIONS.USER_ID_REQUIRED.message },
+        { status: ERROR_DEFINITIONS.USER_ID_REQUIRED.httpStatus }
       )
     }
 
     if (!billId) {
       return NextResponse.json(
-        { error: 'billId is required' },
-        { status: 400 }
+        { error: ERROR_DEFINITIONS.BILL_ID_REQUIRED.message },
+        { status: ERROR_DEFINITIONS.BILL_ID_REQUIRED.httpStatus }
       )
     }
 
@@ -26,19 +26,8 @@ export async function POST(request: Request) {
     const result = await assignBillAction({ userId, billId })
 
     if (!result.success) {
-      // Map server action error codes to HTTP status codes
-      let status = 400
-      if (result.errorCode === BillAssignmentError.USER_NOT_FOUND || 
-          result.errorCode === BillAssignmentError.BILL_NOT_FOUND ||
-          result.errorCode === BillAssignmentError.BILL_ALREADY_ASSIGNED) {
-        status = 404
-      } else if (result.errorCode === BillAssignmentError.USER_BILL_LIMIT_EXCEEDED) {
-        status = 409
-      } else if (result.errorCode === BillAssignmentError.INVALID_BILL_STAGE) {
-        status = 400
-      } else if (result.errorCode === BillAssignmentError.CONCURRENT_UPDATE) {
-        status = 503
-      }
+      // Use centralized HTTP status mapping
+      const status = result.errorCode ? getHttpStatus(result.errorCode) : 500
 
       return NextResponse.json(
         { error: result.error },
@@ -54,8 +43,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Failed to assign bill:', error)
     return NextResponse.json(
-      { error: 'Failed to assign bill' },
-      { status: 500 }
+      { error: ERROR_DEFINITIONS.FAILED_TO_ASSIGN_BILL.message },
+      { status: ERROR_DEFINITIONS.FAILED_TO_ASSIGN_BILL.httpStatus }
     )
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
+import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
 
 export async function GET() {
   try {
@@ -13,8 +14,8 @@ export async function GET() {
   } catch (error) {
     console.error('Failed to fetch users:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch users' },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : ERROR_DEFINITIONS.FAILED_TO_FETCH_USERS.message },
+      { status: ERROR_DEFINITIONS.FAILED_TO_FETCH_USERS.httpStatus }
     )
   }
 }

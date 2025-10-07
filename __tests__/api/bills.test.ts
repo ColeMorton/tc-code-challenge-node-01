@@ -79,7 +79,7 @@ describe('/api/bills', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to fetch bills')
+      expect(data.error).toBe('Database error')
     })
   })
 })

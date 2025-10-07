@@ -11,7 +11,7 @@ import {
   AssignBillResult, 
   BillAssignmentError
 } from '@/app/lib/definitions'
-import { ERROR_MESSAGES } from '@/app/lib/error-constants'
+import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
 
 async function validateUserCapacity(userId: string): Promise<void> {
   const userBillCount = await prisma.bill.count({
@@ -19,7 +19,7 @@ async function validateUserCapacity(userId: string): Promise<void> {
   })
 
   if (userBillCount >= 3) {
-    throw new Error('User already has the maximum of 3 bills assigned')
+    throw new Error(ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message)
   }
 }
 
@@ -35,7 +35,7 @@ export async function validateBillReference(billReference: string): Promise<Simp
   if (existingBill) {
     return {
       isValid: false,
-      message: 'Bill reference already exists'
+      message: ERROR_DEFINITIONS.BILL_REFERENCE_EXISTS.message
     }
   }
 
@@ -71,7 +71,7 @@ export async function createBill(input: CreateBillInput) {
   })
 
   if (!draftStage) {
-    throw new Error('Draft stage not found')
+    throw new Error(ERROR_DEFINITIONS.DRAFT_STAGE_NOT_FOUND.message)
   }
 
   const bill = await prisma.bill.create({
@@ -136,14 +136,14 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
         })
 
         if (!userWithCount) {
-          throw new Error('User not found')
+          throw new Error(ERROR_DEFINITIONS.USER_NOT_FOUND.message)
         }
 
         // CRITICAL: Enforce 3-bill limit within transaction to prevent race conditions
         // Note: This check is within the transaction, unlike validateUserCapacity() which is used
         // in createBill(). Both enforce the same business rule but at different layers.
         if (userWithCount._count.bills >= 3) {
-          throw new Error('User already has the maximum of 3 bills assigned')
+          throw new Error(ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message)
         }
 
         // Get bill with stage information
@@ -153,15 +153,15 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
         })
 
         if (!bill) {
-          throw new Error('Bill not found')
+          throw new Error(ERROR_DEFINITIONS.BILL_NOT_FOUND.message)
         }
 
         if (bill.assignedToId !== null) {
-          throw new Error('Bill is already assigned')
+          throw new Error(ERROR_DEFINITIONS.BILL_ALREADY_ASSIGNED.message)
         }
 
         if (!['Draft', 'Submitted'].includes(bill.billStage.label)) {
-          throw new Error('Bill must be in Draft or Submitted stage to be assigned')
+          throw new Error(ERROR_DEFINITIONS.INVALID_BILL_STAGE.message)
         }
 
         // Prepare update data
@@ -265,35 +265,35 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
       if (errorMessage.includes('User not found')) {
         return { 
           success: false, 
-          error: ERROR_MESSAGES.USER_NOT_FOUND,
+          error: ERROR_DEFINITIONS.USER_NOT_FOUND.message,
           errorCode: BillAssignmentError.USER_NOT_FOUND
         }
       }
       if (errorMessage.includes('Bill not found')) {
         return { 
           success: false, 
-          error: ERROR_MESSAGES.BILL_NOT_FOUND,
+          error: ERROR_DEFINITIONS.BILL_NOT_FOUND.message,
           errorCode: BillAssignmentError.BILL_NOT_FOUND
         }
       }
       if (errorMessage.includes('already assigned')) {
         return { 
           success: false, 
-          error: ERROR_MESSAGES.BILL_ALREADY_ASSIGNED,
+          error: ERROR_DEFINITIONS.BILL_ALREADY_ASSIGNED.message,
           errorCode: BillAssignmentError.BILL_ALREADY_ASSIGNED
         }
       }
       if (errorMessage.includes('maximum of 3 bills')) {
         return { 
           success: false, 
-          error: ERROR_MESSAGES.USER_BILL_LIMIT_EXCEEDED,
+          error: ERROR_DEFINITIONS.USER_BILL_LIMIT_EXCEEDED.message,
           errorCode: BillAssignmentError.USER_BILL_LIMIT_EXCEEDED
         }
       }
       if (errorMessage.includes('Draft or Submitted stage')) {
         return { 
           success: false, 
-          error: ERROR_MESSAGES.INVALID_BILL_STAGE,
+          error: ERROR_DEFINITIONS.INVALID_BILL_STAGE.message,
           errorCode: BillAssignmentError.INVALID_BILL_STAGE
         }
       }
@@ -305,5 +305,5 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
     }
   }
 
-  return { success: false, error: 'Failed to assign bill due to concurrent updates. Please try again.' }
+  return { success: false, error: ERROR_DEFINITIONS.CONCURRENT_UPDATE.message }
 })

@@ -70,6 +70,81 @@ export const ERROR_DEFINITIONS: Record<string, ErrorDefinition> = {
     code: 'UNKNOWN_ERROR',
     message: 'An unexpected error occurred',
     httpStatus: 500
+  },
+
+  // Validation Errors
+  USER_ID_REQUIRED: {
+    code: 'USER_ID_REQUIRED',
+    message: 'userId is required',
+    httpStatus: 400
+  },
+
+  BILL_ID_REQUIRED: {
+    code: 'BILL_ID_REQUIRED',
+    message: 'billId is required',
+    httpStatus: 400
+  },
+
+  BILL_REFERENCE_REQUIRED: {
+    code: 'BILL_REFERENCE_REQUIRED',
+    message: 'Bill reference is required',
+    httpStatus: 400
+  },
+
+  BILL_REFERENCE_TOO_SHORT: {
+    code: 'BILL_REFERENCE_TOO_SHORT',
+    message: 'Bill reference must be at least 3 characters',
+    httpStatus: 400
+  },
+
+  BILL_REFERENCE_TOO_LONG: {
+    code: 'BILL_REFERENCE_TOO_LONG',
+    message: 'Bill reference must be less than 100 characters',
+    httpStatus: 400
+  },
+
+  BILL_DATE_REQUIRED: {
+    code: 'BILL_DATE_REQUIRED',
+    message: 'Bill date is required',
+    httpStatus: 400
+  },
+
+  INVALID_DATE_FORMAT: {
+    code: 'INVALID_DATE_FORMAT',
+    message: 'Invalid date format',
+    httpStatus: 400
+  },
+
+  // System Errors
+  DRAFT_STAGE_NOT_FOUND: {
+    code: 'DRAFT_STAGE_NOT_FOUND',
+    message: 'Draft stage not found',
+    httpStatus: 500
+  },
+
+  BILL_REFERENCE_EXISTS: {
+    code: 'BILL_REFERENCE_EXISTS',
+    message: 'Bill reference already exists',
+    httpStatus: 409
+  },
+
+  // API Operation Errors
+  FAILED_TO_FETCH_USERS: {
+    code: 'FAILED_TO_FETCH_USERS',
+    message: 'Failed to fetch users',
+    httpStatus: 500
+  },
+
+  FAILED_TO_FETCH_BILLS: {
+    code: 'FAILED_TO_FETCH_BILLS',
+    message: 'Failed to fetch bills',
+    httpStatus: 500
+  },
+
+  FAILED_TO_ASSIGN_BILL: {
+    code: 'FAILED_TO_ASSIGN_BILL',
+    message: 'Failed to assign bill',
+    httpStatus: 500
   }
 }
 

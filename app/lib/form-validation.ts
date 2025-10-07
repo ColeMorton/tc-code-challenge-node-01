@@ -1,4 +1,6 @@
 // Client-side form validation types and functions
+import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
+
 export interface FormFieldError {
   message: string
   type?: string
@@ -31,15 +33,15 @@ export const FieldValidators = {
     const trimmedValue = value.trim()
 
     if (!trimmedValue) {
-      return { message: 'Bill reference is required', type: 'required' }
+      return { message: ERROR_DEFINITIONS.BILL_REFERENCE_REQUIRED.message, type: 'required' }
     }
 
     if (trimmedValue.length < 3) {
-      return { message: 'Bill reference must be at least 3 characters', type: 'minLength' }
+      return { message: ERROR_DEFINITIONS.BILL_REFERENCE_TOO_SHORT.message, type: 'minLength' }
     }
 
     if (trimmedValue.length > 100) {
-      return { message: 'Bill reference must be less than 100 characters', type: 'maxLength' }
+      return { message: ERROR_DEFINITIONS.BILL_REFERENCE_TOO_LONG.message, type: 'maxLength' }
     }
 
     return null
@@ -47,12 +49,12 @@ export const FieldValidators = {
 
   billDate: (value: string): FormFieldError | null => {
     if (!value) {
-      return { message: 'Bill date is required', type: 'required' }
+      return { message: ERROR_DEFINITIONS.BILL_DATE_REQUIRED.message, type: 'required' }
     }
 
     const date = new Date(value)
     if (isNaN(date.getTime())) {
-      return { message: 'Invalid date format', type: 'invalidDate' }
+      return { message: ERROR_DEFINITIONS.INVALID_DATE_FORMAT.message, type: 'invalidDate' }
     }
 
     return null
