@@ -32,16 +32,25 @@ const generateRandomUsers = (count: number) => {
 
 const generateRandomBills = (count: number, userIds: string[], billStageIds: string[]) => {
   const bills = []
-  
+  const userBillCounts = new Map<string, number>()
+
   for (let i = 0; i < count; i++) {
     const billDate = new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000) // Random date within last year
     const billReference = `BILL-${String(i + 1).padStart(4, '0')}`
     const randomStageIndex = Math.floor(Math.random() * billStageIds.length)
     const stageId = billStageIds[randomStageIndex]
     const stageName = billStageData[randomStageIndex].label
-    const assignedToId = ['Draft', 'Submitted'].includes(stageName)
-      ? null
-      : userIds[Math.floor(Math.random() * userIds.length)]
+
+    // Assign to user while respecting 3-bill limit
+    let assignedToId = null
+    if (!['Draft', 'Submitted'].includes(stageName)) {
+      // Find a user with fewer than 3 bills
+      const availableUsers = userIds.filter(id => (userBillCounts.get(id) || 0) < 3)
+      if (availableUsers.length > 0) {
+        assignedToId = availableUsers[Math.floor(Math.random() * availableUsers.length)]
+        userBillCounts.set(assignedToId, (userBillCounts.get(assignedToId) || 0) + 1)
+      }
+    }
     
     // Generate stage-specific timestamps
     let submittedAt = null

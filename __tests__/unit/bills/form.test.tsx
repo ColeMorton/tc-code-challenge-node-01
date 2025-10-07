@@ -25,8 +25,8 @@ const mockCreateBill = createBill as jest.Mock
 const mockValidateBillReference = validateBillReference as jest.Mock
 
 const mockUsers = [
-  { id: 'user1', name: 'John Doe', email: 'john@example.com' },
-  { id: 'user2', name: 'Jane Smith', email: 'jane@example.com' }
+  { id: 'user1', name: 'John Doe', email: 'john@example.com', _count: { bills: 1 } },
+  { id: 'user2', name: 'Jane Smith', email: 'jane@example.com', _count: { bills: 2 } }
 ]
 
 describe('BillForm', () => {

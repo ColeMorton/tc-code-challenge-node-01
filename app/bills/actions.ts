@@ -13,6 +13,16 @@ import {
 } from '@/app/lib/definitions'
 import { ERROR_MESSAGES } from '@/app/lib/error-constants'
 
+async function validateUserCapacity(userId: string): Promise<void> {
+  const userBillCount = await prisma.bill.count({
+    where: { assignedToId: userId }
+  })
+
+  if (userBillCount >= 3) {
+    throw new Error('User already has the maximum of 3 bills assigned')
+  }
+}
+
 export async function validateBillReference(billReference: string): Promise<SimpleValidationResult> {
   if (!billReference.trim()) {
     return { isValid: true }
@@ -49,6 +59,11 @@ export async function createBill(input: CreateBillInput) {
   const referenceValidation = await validateBillReference(validatedInput.billReference)
   if (!referenceValidation.isValid) {
     throw new Error(referenceValidation.message || 'Invalid bill reference')
+  }
+
+  // CRITICAL: Validate user capacity if assigning to a user
+  if (validatedInput.assignedToId) {
+    await validateUserCapacity(validatedInput.assignedToId)
   }
 
   const draftStage = await prisma.billStage.findFirst({
@@ -124,6 +139,9 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
           throw new Error('User not found')
         }
 
+        // CRITICAL: Enforce 3-bill limit within transaction to prevent race conditions
+        // Note: This check is within the transaction, unlike validateUserCapacity() which is used
+        // in createBill(). Both enforce the same business rule but at different layers.
         if (userWithCount._count.bills >= 3) {
           throw new Error('User already has the maximum of 3 bills assigned')
         }

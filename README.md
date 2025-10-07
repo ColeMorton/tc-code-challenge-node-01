@@ -49,9 +49,16 @@ npm install
 2. Set up the database (uses SQLite):
 ```bash
 npx prisma generate
-npx prisma db push
-npm run db:seed
+npm run db:setup  # Recommended: complete setup with constraints
 ```
+
+Or manually:
+```bash
+npm run db:push   # Schema + constraints
+npm run db:seed   # Sample data + constraints
+```
+
+**Note**: Database constraints (triggers, views, indexes) are automatically applied to enforce business rules including the 3-bill limit per user.
 
 3. Start the development server:
 ```bash

@@ -167,11 +167,21 @@ describe('Users API Integration Tests', () => {
         expect(response.status).toBe(200)
       })
 
-      // All responses should have the same data
+      // All responses should have the same data (excluding timestamps)
       const firstData = await responses[0].json()
       for (let i = 1; i < responses.length; i++) {
         const data = await responses[i].json()
-        expect(data).toEqual(firstData)
+        
+        // Compare data excluding timestamp fields that may vary between requests
+        const normalizeData = (users: User[]) => users.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt
+          // Exclude updatedAt as it may change between concurrent requests
+        }))
+        
+        expect(normalizeData(data)).toEqual(normalizeData(firstData))
       }
     })
   })

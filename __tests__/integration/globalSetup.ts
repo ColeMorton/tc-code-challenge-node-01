@@ -28,13 +28,13 @@ export default async function globalSetup() {
     })
     console.log('✅ Created test database schema')
 
-    // Seed test database with required data
+    // Seed test database with required data (already applies constraints)
     const seedCommand = 'tsx prisma/seed.ts'
     execSync(seedCommand, {
       stdio: 'pipe',
       env: { ...process.env, DATABASE_URL: 'file:./test.db' }
     })
-    console.log('✅ Seeded test database')
+    console.log('✅ Seeded test database (includes constraints)')
 
   } catch (error) {
     console.error('❌ Failed to setup test database:', error)

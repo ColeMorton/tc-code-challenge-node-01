@@ -1,57 +1,99 @@
 /**
  * Frontend-Backend Validation Consistency Tests
  *
- * These tests ensure that validation rules in the frontend
- * match the validation behavior in the backend APIs.
+ * These tests document the intentional differences between client and server validation.
+ * Client validation prioritizes UX with permissive rules and immediate feedback.
+ * Server validation enforces strict security and business rules.
  */
 
 describe('Frontend-Backend Validation Consistency', () => {
   describe('Bill Creation Validation Rules', () => {
     it('should have consistent required field validation', () => {
-      // Frontend validation (from newBillPage.tsx):
-      // - billReference.trim() required
+      // Frontend validation (form-validation.ts):
+      // - billReference required (min 3 chars)
       // - billDate required
       // - assignedToId optional
 
-      // Server Action validation (from bills/actions.ts):
-      // - billReference required
+      // Server validation (validation.ts):
+      // - billReference required (min 5 chars + regex)
       // - billDate required
       // - assignedToId optional (defaults to null)
 
       const frontendRequiredFields = ['billReference', 'billDate']
-      const serverActionRequiredFields = ['billReference', 'billDate'] // from createBill action
-      const frontendOptionalFields = ['assignedToId']
-      const serverActionOptionalFields = ['assignedToId']
+      const serverRequiredFields = ['billReference', 'billDate']
 
-      expect(frontendRequiredFields).toEqual(serverActionRequiredFields)
-      expect(frontendOptionalFields).toEqual(serverActionOptionalFields)
+      expect(frontendRequiredFields).toEqual(serverRequiredFields)
     })
 
-    it('should have consistent bill reference validation', () => {
-      // Frontend: Uses validateBillReference Server Action for real-time validation
-      // Server: Uses unique constraint and findUnique check
-      // Both should reject duplicate references
+    it('should document intentional client-server validation differences', () => {
+      // Client: Permissive for UX (3 char min, any characters)
+      // Server: Strict for security (5 char min, alphanumeric + hyphens only)
 
-      const validationApproach = {
-        frontend: 'Real-time Server Action validation with debouncing',
-        server: 'Database uniqueness constraint + explicit check'
+      const validationStrategy = {
+        client: {
+          library: 'Native JavaScript',
+          billReferenceMin: 3,
+          billReferenceRegex: null, // No pattern enforcement
+          purpose: 'Immediate UX feedback'
+        },
+        server: {
+          library: 'Zod',
+          billReferenceMin: 5,
+          billReferenceRegex: /^[A-Za-z0-9-]+$/,
+          purpose: 'Security and business rule enforcement'
+        }
       }
 
-      expect(validationApproach.frontend).toBeDefined()
-      expect(validationApproach.server).toBeDefined()
-
-      // Both approaches ensure uniqueness - consistency verified
+      expect(validationStrategy.client.library).toBe('Native JavaScript')
+      expect(validationStrategy.server.library).toBe('Zod')
+      expect(validationStrategy.client.billReferenceMin).toBeLessThan(
+        validationStrategy.server.billReferenceMin
+      )
     })
 
-    it('should have consistent error message structure', () => {
-      // Frontend error handling: Catches exceptions from Server Actions
-      // Server Actions: Throw errors with meaningful messages
+    it('should use separate validation implementations', () => {
+      // Frontend: form-validation.ts with FieldValidators
+      // Server: validation.ts with Zod schemas
+      // No shared validation code between client and server
 
-      const frontendErrorHandling = 'try/catch with error.message'
-      const serverActionErrorHandling = 'throw new Error(message)'
+      const validationSeparation = {
+        client: 'app/lib/form-validation.ts',
+        server: 'app/lib/validation.ts',
+        shared: 'None - intentionally decoupled'
+      }
 
-      expect(frontendErrorHandling).toBeDefined()
-      expect(serverActionErrorHandling).toBeDefined()
+      expect(validationSeparation.client).not.toEqual(validationSeparation.server)
+      expect(validationSeparation.shared).toBe('None - intentionally decoupled')
+    })
+
+    it('should handle bill reference uniqueness validation', () => {
+      // Frontend: Async server action call (validateBillReference)
+      // Server: Database uniqueness constraint + explicit check
+      // Both ensure uniqueness but at different layers
+
+      const uniquenessValidation = {
+        frontend: 'Debounced async server action for real-time feedback',
+        server: 'Database constraint + transaction check'
+      }
+
+      expect(uniquenessValidation.frontend).toBeDefined()
+      expect(uniquenessValidation.server).toBeDefined()
+    })
+
+    it('should have consistent error communication structure', () => {
+      // Frontend: Displays validation errors from FieldValidators
+      // Server Actions: Throw errors when validation fails
+      // Both provide user-friendly error messages
+
+      const errorHandling = {
+        clientValidation: 'FormFieldError with message and type',
+        serverValidation: 'Zod ValidationResult with field errors',
+        serverAction: 'Throws Error when business rules violated'
+      }
+
+      expect(errorHandling.clientValidation).toBeDefined()
+      expect(errorHandling.serverValidation).toBeDefined()
+      expect(errorHandling.serverAction).toBeDefined()
     })
 
     it('should have consistent optional assignment behavior', () => {

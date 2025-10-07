@@ -7,9 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Database Setup
 ```bash
 npx prisma generate    # Generate Prisma client
-npx prisma db push     # Sync database with schema
+npx prisma db push     # Sync database schema with migrations
 npm run db:seed        # Seed database with sample data
 ```
+
+**Note**: Database migrations include SQLite triggers that enforce the 3-bill limit at the database level.
 
 ### Development
 ```bash

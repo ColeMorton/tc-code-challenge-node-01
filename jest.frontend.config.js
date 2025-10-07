@@ -10,7 +10,7 @@ const createJestConfig = nextJest({
 const frontendJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
-  testMatch: ['**/__tests__/unit/**/*.(test|spec).(ts|tsx)'],
+  testMatch: ['**/__tests__/unit/**/*.(test|spec).(ts|tsx)', '**/__tests__/build/**/*.(test|spec).(ts|tsx)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },

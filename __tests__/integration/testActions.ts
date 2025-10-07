@@ -10,6 +10,7 @@ import {
   AssignBillInput,
   AssignBillResult
 } from '@/app/lib/definitions'
+import { validateCreateBillInput } from '@/app/lib/validation'
 
 export async function validateBillReference(billReference: string): Promise<SimpleValidationResult> {
   if (!billReference.trim()) {
@@ -34,17 +35,19 @@ export async function validateBillReference(billReference: string): Promise<Simp
 }
 
 export async function createBill(input: CreateBillInput) {
-  if (!input.billReference.trim()) {
-    throw new Error('Bill reference is required')
+  // Validate input with Zod (same as production code)
+  const validation = validateCreateBillInput(input)
+  if (!validation.success) {
+    const errorMessages = Object.values(validation.errors || {}).flat()
+    throw new Error(`Validation failed: ${errorMessages.join(', ')}`)
   }
 
-  if (!input.billDate) {
-    throw new Error('Bill date is required')
-  }
+  const validatedInput = validation.data!
 
-  const validation = await validateBillReference(input.billReference)
-  if (!validation.isValid) {
-    throw new Error(validation.message || 'Invalid bill reference')
+  // Additional async validation for bill reference uniqueness
+  const referenceValidation = await validateBillReference(validatedInput.billReference)
+  if (!referenceValidation.isValid) {
+    throw new Error(referenceValidation.message || 'Invalid bill reference')
   }
 
   const draftStage = await testPrisma.billStage.findFirst({
@@ -57,9 +60,9 @@ export async function createBill(input: CreateBillInput) {
 
   const bill = await testPrisma.bill.create({
     data: {
-      billReference: input.billReference,
-      billDate: new Date(input.billDate),
-      assignedToId: input.assignedToId || null,
+      billReference: validatedInput.billReference,
+      billDate: new Date(validatedInput.billDate),
+      assignedToId: validatedInput.assignedToId || null,
       billStageId: draftStage.id
     }
   })

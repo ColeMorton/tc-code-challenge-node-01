@@ -32,11 +32,12 @@ async function globalSetup() {
       // Push database schema
       await execAsync('npx prisma db push --force-reset')
 
-      // Seed the database
+      // Seed the database (already applies constraints)
       console.log('🌱 Seeding E2E test database...')
       await execAsync('npm run db:seed')
+      console.log('✅ E2E database seeded (includes constraints)')
     } else {
-      // Database exists - just clean up test data
+      // Database exists - just clean up test data and ensure constraints
       console.log('🧹 Cleaning up test bills from previous run...')
       const { PrismaClient } = await import('@prisma/client')
       const prisma = new PrismaClient({

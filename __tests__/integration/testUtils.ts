@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 // Create a separate Prisma client for integration tests with optimized connection settings
 export const testPrisma = new PrismaClient({
@@ -10,6 +12,32 @@ export const testPrisma = new PrismaClient({
   // Optimize for testing environment
   log: process.env.NODE_ENV === 'test' ? ['error'] : ['query', 'info', 'warn', 'error'],
 })
+
+/**
+ * Apply database migrations (triggers) to test database
+ */
+async function applyMigrations() {
+  try {
+    const migrationPath = join(process.cwd(), 'prisma', 'migrations', '20241007000000_add_bill_limit_triggers', 'migration.sql')
+    const migrationSQL = readFileSync(migrationPath, 'utf-8')
+
+    // Split by semicolon and filter out empty statements
+    const statements = migrationSQL
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+
+    // Execute each statement separately
+    for (const statement of statements) {
+      await testPrisma.$executeRawUnsafe(statement)
+    }
+  } catch (error) {
+    // Ignore errors if triggers already exist
+    if (!String(error).includes('already exists')) {
+      console.error('Migration application failed:', error)
+    }
+  }
+}
 
 /**
  * Reset database to clean state for test isolation
@@ -34,6 +62,9 @@ export async function resetDatabase() {
  */
 export async function seedRequiredData() {
   try {
+    // Apply database migrations (triggers)
+    await applyMigrations()
+
     // Create bill stages using upsert to handle race conditions
     const billStageData = [
       { label: 'Draft', colour: '#9CA3AF' },

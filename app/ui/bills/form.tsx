@@ -4,15 +4,15 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBill, validateBillReference } from '@/app/bills/actions'
-import { 
-  FormValidationState, 
-  initialValidationState, 
-  validateForm, 
+import {
+  FormValidationState,
+  initialValidationState,
+  validateForm,
   getFieldError,
   hasFieldError,
-  FieldValidators
+  FieldValidators,
+  BillFormData
 } from '@/app/lib/form-validation'
-import { BillFormData } from '@/app/lib/validation'
 import {
   AsyncValidationState,
   BillFormProps
@@ -302,11 +302,19 @@ export default function BillForm({ users }: BillFormProps) {
             aria-invalid={hasFieldError(validation, 'assignedToId')}
           >
             <option value="">Leave unassigned</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name} ({user.email})
-              </option>
-            ))}
+            {users.map((user) => {
+              const billCount = user._count.bills
+              const atCapacity = billCount >= 3
+              return (
+                <option
+                  key={user.id}
+                  value={user.id}
+                  disabled={atCapacity}
+                >
+                  {user.name} ({user.email}) {atCapacity ? '- At capacity (3/3)' : `(${billCount}/3)`}
+                </option>
+              )
+            })}
           </select>
           {getFieldError(validation, 'assignedToId') && (
             <p id="assignedToId-error" className="mt-1 text-sm text-red-600" role="alert">

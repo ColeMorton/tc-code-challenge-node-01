@@ -136,10 +136,19 @@ export interface BillsDashboardProps {
 }
 
 /**
+ * User with bill count for form display
+ */
+export interface UserWithCount extends User {
+  _count: {
+    bills: number
+  }
+}
+
+/**
  * Props for the BillForm component
  */
 export interface BillFormProps {
-  users: User[]
+  users: UserWithCount[]
 }
 
 /**

@@ -82,6 +82,50 @@ describe('Bills API Integration Tests', () => {
       expect(duplicateValidation.isValid).toBe(false)
       expect(duplicateValidation.message).toBe('Bill reference already exists')
     })
+
+    it('should enforce server-side minimum length (5 chars)', async () => {
+      await seedRequiredData()
+
+      // 4 chars passes client validation (3+ chars) but fails server validation (5+ chars)
+      await expect(createBill({
+        billReference: 'ABCD',
+        billDate: '2024-01-15'
+      })).rejects.toThrow('Bill reference must be at least 5 characters')
+    })
+
+    it('should enforce server-side regex pattern', async () => {
+      await seedRequiredData()
+
+      // Special characters pass client validation but fail server regex
+      await expect(createBill({
+        billReference: 'BILL@2024!',
+        billDate: '2024-01-15'
+      })).rejects.toThrow('Bill reference can only contain letters, numbers, and hyphens')
+
+      // Spaces should fail
+      await expect(createBill({
+        billReference: 'BILL 2024',
+        billDate: '2024-01-15'
+      })).rejects.toThrow('Bill reference can only contain letters, numbers, and hyphens')
+    })
+
+    it('should accept valid alphanumeric with hyphens', async () => {
+      await seedRequiredData()
+
+      const validReferences = [
+        'BILL-2024-001',
+        'ABC-123',
+        'INVOICE-2024-01-001'
+      ]
+
+      for (const ref of validReferences) {
+        const bill = await createBill({
+          billReference: ref,
+          billDate: '2024-01-15'
+        })
+        expect(bill.billReference).toBe(ref)
+      }
+    })
   })
 
   describe('Bill Assignment API', () => {

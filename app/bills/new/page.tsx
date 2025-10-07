@@ -3,6 +3,11 @@ import BillForm from '../../ui/bills/form'
 
 export default async function NewBillPage() {
   const users = await prisma.user.findMany({
+    include: {
+      _count: {
+        select: { bills: true }
+      }
+    },
     orderBy: {
       createdAt: 'desc'
     }
