@@ -50,7 +50,7 @@ export async function createBill(input: CreateBillInput) {
   const validation = validateCreateBillInput(input)
   if (!validation.success) {
     const errorMessages = Object.values(validation.errors || {}).flat()
-    throw new Error(`Validation failed: ${errorMessages.join(', ')}`)
+    throw new Error(`${ERROR_DEFINITIONS.VALIDATION_FAILED.message}: ${errorMessages.join(', ')}`)
   }
 
   const validatedInput = validation.data!
@@ -58,7 +58,7 @@ export async function createBill(input: CreateBillInput) {
   // Additional async validation for bill reference uniqueness
   const referenceValidation = await validateBillReference(validatedInput.billReference)
   if (!referenceValidation.isValid) {
-    throw new Error(referenceValidation.message || 'Invalid bill reference')
+    throw new Error(referenceValidation.message || ERROR_DEFINITIONS.BILL_REFERENCE_EXISTS.message)
   }
 
   // CRITICAL: Validate user capacity if assigning to a user
@@ -101,9 +101,9 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
   const validation = validateAssignBillInput(input)
   if (!validation.success) {
     const errorMessages = Object.values(validation.errors || {}).flat()
-    return { 
-      success: false, 
-      error: `Validation failed: ${errorMessages.join(', ')}` 
+    return {
+      success: false,
+      error: `${ERROR_DEFINITIONS.VALIDATION_FAILED.message}: ${errorMessages.join(', ')}`
     }
   }
 
@@ -249,7 +249,7 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
       }
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      const errorMessage = error instanceof Error ? error.message : ERROR_DEFINITIONS.UNKNOWN_ERROR.message
       
       // Log error with context
       console.error({

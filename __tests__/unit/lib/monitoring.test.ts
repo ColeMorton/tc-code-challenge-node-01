@@ -75,7 +75,7 @@ describe('PerformanceMonitor', () => {
 
     it('should log in development environment', () => {
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'development'
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true })
 
       const metric: Omit<PerformanceMetric, 'timestamp'> = {
         operation: 'testOperation',
@@ -91,12 +91,12 @@ describe('PerformanceMonitor', () => {
         { test: 'data' }
       )
 
-      process.env.NODE_ENV = originalEnv
+      Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true })
     })
 
     it('should log errors in development environment', () => {
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'development'
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true })
 
       const metric: Omit<PerformanceMetric, 'timestamp'> = {
         operation: 'testOperation',
@@ -113,12 +113,12 @@ describe('PerformanceMonitor', () => {
         { test: 'data' }
       )
 
-      process.env.NODE_ENV = originalEnv
+      Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true })
     })
 
     it('should not log in production environment', () => {
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true })
 
       const metric: Omit<PerformanceMetric, 'timestamp'> = {
         operation: 'testOperation',
@@ -132,7 +132,7 @@ describe('PerformanceMonitor', () => {
       expect(console.info).not.toHaveBeenCalled()
       expect(console.error).not.toHaveBeenCalled()
 
-      process.env.NODE_ENV = originalEnv
+      Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true })
     })
 
     it('should maintain metrics within maxMetrics limit', () => {
