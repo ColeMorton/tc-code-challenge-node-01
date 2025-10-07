@@ -1,8 +1,8 @@
 // Client-side form validation types and functions
-import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
-import type { BillFormData, FormFieldError } from '@/app/lib/definitions'
-import { sanitizeBillReference } from '@/app/lib/sanitization'
-import { BILL_REFERENCE_CONSTRAINTS } from '@/app/lib/validation-constants'
+import { ERROR_DEFINITIONS } from '@/app/lib/error'
+import type { BillFormData, FormFieldError } from '@/app/lib/types'
+import { sanitizeBillReference } from '@/app/lib/security'
+import { BILL_REFERENCE_CONSTRAINTS } from './constants'
 
 // FormFieldError is imported from definitions.ts
 
@@ -14,7 +14,7 @@ export interface FormValidationState {
 }
 
 // Re-export BillFormData for backward compatibility
-export type { BillFormData } from '@/app/lib/definitions'
+export type { BillFormData } from '@/app/lib/types'
 
 // Initial validation state
 export const initialValidationState: FormValidationState = {

@@ -5,7 +5,7 @@
  * Eliminates the need for multiple error classes while maintaining type safety.
  */
 
-import { ERROR_DEFINITIONS, BillAssignmentError, ErrorCode } from './error-constants'
+import { ERROR_DEFINITIONS, BillAssignmentError, ErrorCode } from './constants'
 
 /**
  * Single error class that handles all error types

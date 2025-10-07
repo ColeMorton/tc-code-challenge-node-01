@@ -9,7 +9,7 @@ import {
   SimpleValidationResult,
   AssignBillInput,
   AssignBillResult
-} from '@/app/lib/definitions'
+} from '@/app/lib/types'
 import { validateCreateBillInput } from '@/app/lib/validation'
 
 export async function validateBillReference(billReference: string): Promise<SimpleValidationResult> {

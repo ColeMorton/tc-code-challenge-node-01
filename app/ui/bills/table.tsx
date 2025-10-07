@@ -1,4 +1,4 @@
-import { fetchUserBillsSummary } from '@/app/lib/data';
+import { fetchUserBillsSummary } from '@/app/lib/domain/bills';
 
 export default async function BillsTable() {
   const userSummary = await fetchUserBillsSummary();

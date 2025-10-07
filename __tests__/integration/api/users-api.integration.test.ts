@@ -1,6 +1,6 @@
 import { GET } from '@/app/api/users/route'
 import { resetDatabase, testPrisma } from '@/__tests__/integration/testUtils'
-import type { User } from '@/app/lib/definitions'
+import type { User } from '@/app/lib/types'
 
 describe('Users API Integration Tests', () => {
   beforeEach(async () => {

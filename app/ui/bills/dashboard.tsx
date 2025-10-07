@@ -6,8 +6,8 @@ import {
   Bill,
   BillsDashboardProps,
   GroupedBills
-} from '@/app/lib/definitions'
-import { getStageConfig, STAGE_ORDER } from '@/app/lib/bill-stage-config'
+} from '@/app/lib/types'
+import { getStageConfig, STAGE_ORDER, isStageAssignable } from '@/app/lib/domain/bills'
 
 export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
   const [error, setError] = useState<string | null>(null)
@@ -106,7 +106,7 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
               <div className="p-4 space-y-3 min-h-[400px]">
                 {stageBills.map((bill) => {
                   const isUnassigned = !bill.assignedTo
-                  const isAssignable = ['Draft', 'Submitted'].includes(bill.billStage.label)
+                  const isAssignable = isStageAssignable(bill.billStage)
                   const canAssign = isUnassigned && isAssignable
                   const isAssigning = assigningBillId === bill.id
 

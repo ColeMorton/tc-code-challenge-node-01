@@ -5,7 +5,7 @@
 import {
   PerformanceMetric,
   CacheMetric
-} from '@/app/lib/definitions'
+} from '@/app/lib/types'
 
 class PerformanceMonitor {
   private metrics: PerformanceMetric[] = []

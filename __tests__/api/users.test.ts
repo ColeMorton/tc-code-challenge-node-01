@@ -1,9 +1,9 @@
 import { GET } from '@/app/api/users/route'
-import { prisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/infrastructure'
 import type { MockApiUser } from '@/__tests__/types/mocks'
 
 // Mock Prisma
-jest.mock('@/app/lib/prisma', () => ({
+jest.mock('@/app/lib/infrastructure', () => ({
   prisma: {
     user: {
       findMany: jest.fn(),

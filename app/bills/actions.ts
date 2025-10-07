@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { prisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/infrastructure'
 import { monitorBillAssignment } from '@/lib/monitoring'
 import { validateCreateBillInput, validateAssignBillInput } from '@/app/lib/validation'
 import {
@@ -10,22 +10,23 @@ import {
   AssignBillInput,
   AssignBillResult,
   BillAssignmentError
-} from '@/app/lib/definitions'
-import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
-import { createError, handleError } from '@/app/lib/errors'
-import { BILL_STAGE } from '@/app/lib/bill-stage-config'
-import { 
-  isStageAssignable, 
+} from '@/app/lib/types'
+import { ERROR_DEFINITIONS } from '@/app/lib/error'
+import { createError, handleError } from '@/app/lib/error'
+import { BILL_STAGE } from '@/app/lib/domain/bills'
+import {
+  isStageAssignable,
   getTargetStageForAssignment,
-  shouldSetSubmittedAtOnAssignment 
-} from '@/app/lib/bill-business-logic'
+  shouldSetSubmittedAtOnAssignment,
+  canUserAcceptMoreBills
+} from '@/app/lib/domain/bills'
 
 async function validateUserCapacity(userId: string): Promise<void> {
   const userBillCount = await prisma.bill.count({
     where: { assignedToId: userId }
   })
 
-  if (userBillCount >= 3) {
+  if (!canUserAcceptMoreBills(userBillCount)) {
     throw createError(BillAssignmentError.USER_BILL_LIMIT_EXCEEDED)
   }
 }
@@ -146,10 +147,10 @@ export const assignBillAction = monitorBillAssignment(async (input: AssignBillIn
           throw createError(BillAssignmentError.USER_NOT_FOUND)
         }
 
-        // CRITICAL: Enforce 3-bill limit within transaction to prevent race conditions
+        // CRITICAL: Enforce bill limit within transaction to prevent race conditions
         // Note: This check is within the transaction, unlike validateUserCapacity() which is used
         // in createBill(). Both enforce the same business rule but at different layers.
-        if (userWithCount._count.bills >= 3) {
+        if (!canUserAcceptMoreBills(userWithCount._count.bills)) {
           throw createError(BillAssignmentError.USER_BILL_LIMIT_EXCEEDED)
         }
 

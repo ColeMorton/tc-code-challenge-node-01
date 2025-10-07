@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { assignBillAction } from '@/app/bills/actions'
-import { ERROR_DEFINITIONS, getHttpStatus } from '@/app/lib/error-constants'
+import { ERROR_DEFINITIONS, getHttpStatus } from '@/app/lib/error'
 
 export async function POST(request: Request) {
   try {

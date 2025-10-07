@@ -18,6 +18,6 @@ export type {
   RequiredFields,
   ExtractData,
   ExtractError
-} from '@/app/lib/definitions'
+} from '@/app/lib/types'
 
-export type { BillAssignmentErrorCode } from '@/app/lib/error-constants'
+export type { BillAssignmentErrorCode } from '@/app/lib/error'

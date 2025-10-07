@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { sanitizeBillReference } from '@/app/lib/sanitization'
-import { BILL_REFERENCE_CONSTRAINTS } from '@/app/lib/validation-constants'
-import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
+import { sanitizeBillReference } from '@/app/lib/security'
+import { BILL_REFERENCE_CONSTRAINTS } from './constants'
+import { ERROR_DEFINITIONS } from '@/app/lib/error'
 
 // Server-only validation with Zod for strict business rules
 

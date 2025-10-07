@@ -2,7 +2,7 @@
  * Standardized mock helpers for consistent test typing
  */
 
-import type { MockPrismaClient } from '@/app/lib/definitions'
+import type { MockPrismaClient } from '@/app/lib/types'
 
 /**
  * Create a properly typed mock Prisma client

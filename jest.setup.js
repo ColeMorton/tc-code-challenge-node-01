@@ -34,6 +34,37 @@ jest.mock('next/navigation', () => ({
   useParams: jest.fn(() => ({}))
 }))
 
+// Mock Next.js server components
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn((data, init) => {
+      const response = {
+        json: () => Promise.resolve(data),
+        status: init?.status || 200,
+        headers: {
+          get: jest.fn((name) => {
+            if (name === 'content-type') return 'application/json'
+            return null
+          })
+        }
+      }
+      // Make it instanceof Response for tests
+      Object.setPrototypeOf(response, Response.prototype)
+      return response
+    }),
+    error: jest.fn(),
+    redirect: jest.fn()
+  },
+  NextRequest: class NextRequest {
+    constructor(url, init = {}) {
+      this.url = url
+      this.method = init.method || 'GET'
+      this.headers = new Map(Object.entries(init.headers || {}))
+      this.body = init.body
+    }
+  }
+}))
+
 // Mock window.scrollTo for tests (only in jsdom environment)
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'scrollTo', {

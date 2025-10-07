@@ -3,8 +3,8 @@
  */
 
 import { NextResponse } from 'next/server'
-import { AppError } from './errors'
-import type { ErrorCode } from './error-constants'
+import { AppError } from './handlers'
+import type { ErrorCode } from './constants'
 
 export interface ApiErrorResponse {
   error: string

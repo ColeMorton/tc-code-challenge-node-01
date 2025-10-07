@@ -1,4 +1,4 @@
-import { sanitizeBillReference, sanitizeString, sanitizeForDatabase } from '@/app/lib/sanitization'
+import { sanitizeBillReference, sanitizeString, sanitizeForDatabase } from '@/app/lib/security'
 
 describe('Enhanced Sanitization', () => {
   describe('sanitizeBillReference', () => {

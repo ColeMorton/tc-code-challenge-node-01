@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/prisma'
-import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
+import { prisma } from '@/app/lib/infrastructure'
+import { ERROR_DEFINITIONS } from '@/app/lib/error'
 
 export async function GET() {
   try {

@@ -5,7 +5,7 @@
  * This module contains core business logic that should be consistent across the application.
  */
 
-import { BILL_STAGE, type BillStageValue } from '@/app/lib/bill-stage-config'
+import { BILL_STAGE, type BillStageValue } from './stage-config'
 
 /**
  * Business rule: Which stages allow bill assignment

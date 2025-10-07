@@ -10,7 +10,7 @@ import {
   monitorBillCreation,
   getSystemHealth
 } from '@/lib/monitoring'
-import { PerformanceMetric } from '@/app/lib/definitions'
+import { PerformanceMetric } from '@/app/lib/types'
 
 // Mock console methods to suppress output during tests
 const originalConsoleLog = console.log

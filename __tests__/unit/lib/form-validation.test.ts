@@ -3,7 +3,7 @@ import {
   validateForm,
   initialValidationState,
   BillFormData
-} from '@/app/lib/form-validation'
+} from '@/app/lib/validation'
 
 describe('Client-Side Form Validation', () => {
   describe('FieldValidators.billReference', () => {

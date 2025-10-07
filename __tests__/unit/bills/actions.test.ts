@@ -1,10 +1,10 @@
 import { validateBillReference, createBill, assignBillAction } from '@/app/bills/actions'
-import { prisma } from '@/app/lib/prisma'
-import type { MockPrismaClient } from '@/app/lib/definitions'
+import { prisma } from '@/app/lib/infrastructure'
+import type { MockPrismaClient } from '@/app/lib/types'
 import { revalidatePath } from 'next/cache'
 
 // Mock Prisma with proper typing
-jest.mock('@/app/lib/prisma', () => ({
+jest.mock('@/app/lib/infrastructure', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),

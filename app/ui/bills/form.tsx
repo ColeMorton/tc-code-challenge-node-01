@@ -12,12 +12,12 @@ import {
   hasFieldError,
   FieldValidators,
   BillFormData
-} from '@/app/lib/form-validation'
+} from '@/app/lib/validation'
 import {
   AsyncValidationState,
   BillFormProps
-} from '@/app/lib/definitions'
-import { sanitizeBillReference } from '@/app/lib/sanitization'
+} from '@/app/lib/types'
+import { sanitizeBillReference } from '@/app/lib/security'
 
 export default function BillForm({ users }: BillFormProps) {
   const router = useRouter()

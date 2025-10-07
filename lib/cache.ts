@@ -3,7 +3,7 @@
  * Provides caching for user bill counts and assignment capacity
  */
 
-import { CacheEntry } from '@/app/lib/definitions'
+import { CacheEntry } from '@/app/lib/types'
 
 // Re-export types that are specific to cache operations
 export interface UserCapacity {

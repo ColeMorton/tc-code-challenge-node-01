@@ -3,7 +3,7 @@
  * Tests the corrected database triggers for bill assignment limits
  */
 
-import { prisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/infrastructure'
 
 describe('Database Constraints - Bill Assignment Limits', () => {
   let testUser: { id: string; name: string; email: string }

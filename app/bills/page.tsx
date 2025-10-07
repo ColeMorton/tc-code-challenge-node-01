@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { getBills, getUsers } from '@/app/lib/data'
+import { getBills, getUsers } from '@/app/lib/domain/bills'
 import BillsDashboard from '@/app/ui/bills/dashboard'
 import { BillsDashboardSkeleton } from '@/app/ui/skeletons'
 

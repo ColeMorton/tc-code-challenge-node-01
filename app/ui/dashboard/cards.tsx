@@ -2,7 +2,7 @@ import {
   fetchTotalNumberSubmittedBills,
   fetchTotalNumberApprovedBills,
   fetchTotalNumberOnHoldBills
-} from '@/app/lib/data';
+} from '@/app/lib/domain/bills';
 
 export default async function CardWrapper() {
   const [

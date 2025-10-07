@@ -3,7 +3,7 @@
  * All type definitions, interfaces, enums, and type aliases should be defined here
  */
 
-import type { ErrorCode } from '@/app/lib/error-constants'
+import type { ErrorCode } from '@/app/lib/error'
 
 // ============================================================================
 // CORE DOMAIN TYPES
@@ -214,7 +214,7 @@ export interface AssignBillResult {
  * Bill assignment error codes
  * Re-exported from error-constants.ts for consistency
  */
-export { BillAssignmentError } from '@/app/lib/error-constants'
+export { BillAssignmentError } from '@/app/lib/error'
 
 /**
  * Detailed error information

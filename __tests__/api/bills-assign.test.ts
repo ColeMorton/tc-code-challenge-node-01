@@ -1,8 +1,7 @@
-import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/bills/assign/route'
 import { assignBillAction } from '@/app/bills/actions'
-import { BillAssignmentError } from '@/app/lib/definitions'
-import { ERROR_DEFINITIONS } from '@/app/lib/error-constants'
+import { BillAssignmentError } from '@/app/lib/types'
+import { ERROR_DEFINITIONS } from '@/app/lib/error'
 
 // Mock the server action
 jest.mock('@/app/bills/actions', () => ({
@@ -56,7 +55,7 @@ describe('/api/bills/assign', () => {
         bill: mockBill
       })
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -87,7 +86,7 @@ describe('/api/bills/assign', () => {
         errorCode: BillAssignmentError.USER_NOT_FOUND
       })
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -113,7 +112,7 @@ describe('/api/bills/assign', () => {
         errorCode: BillAssignmentError.USER_BILL_LIMIT_EXCEEDED
       })
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -139,7 +138,7 @@ describe('/api/bills/assign', () => {
         errorCode: BillAssignmentError.BILL_NOT_FOUND
       })
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -165,7 +164,7 @@ describe('/api/bills/assign', () => {
         errorCode: BillAssignmentError.BILL_ALREADY_ASSIGNED
       })
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -191,7 +190,7 @@ describe('/api/bills/assign', () => {
         errorCode: BillAssignmentError.INVALID_BILL_STAGE
       })
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -217,7 +216,7 @@ describe('/api/bills/assign', () => {
         errorCode: BillAssignmentError.CONCURRENT_UPDATE
       })
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -235,7 +234,7 @@ describe('/api/bills/assign', () => {
         billId: 'bill1'
       }
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -254,7 +253,7 @@ describe('/api/bills/assign', () => {
         userId: 'user1'
       }
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }
@@ -277,7 +276,7 @@ describe('/api/bills/assign', () => {
       // Mock server action throwing an error
       mockAssignBillAction.mockRejectedValue(new Error('Database connection failed'))
 
-      const request = new NextRequest('http://localhost:3000/api/bills/assign', {
+      const request = new Request('http://localhost:3000/api/bills/assign', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: { 'Content-Type': 'application/json' }

@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { prisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/infrastructure'
 import BillForm from '@/app/ui/bills/form'
 import { BillFormSkeleton } from '@/app/ui/skeletons'
 

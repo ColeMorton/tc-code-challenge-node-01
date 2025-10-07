@@ -1,5 +1,5 @@
-import { prisma } from '@/app/lib/prisma'
-import { BILL_STAGE } from '@/app/lib/bill-stage-config'
+import { prisma } from '@/app/lib/infrastructure'
+import { BILL_STAGE } from './stage-config'
 
 export async function getBills() {
   return await prisma.bill.findMany({
