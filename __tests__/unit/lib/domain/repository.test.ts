@@ -85,7 +85,7 @@ describe('Repository Functions', () => {
           id: '1',
           name: 'John Doe',
           email: 'john@example.com',
-          createdAt: '2024-01-01T00:00:00.000Z'
+          createdAt: new Date('2024-01-01T00:00:00.000Z')
         }
       ]
 

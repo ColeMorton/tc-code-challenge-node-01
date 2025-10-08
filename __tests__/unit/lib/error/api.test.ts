@@ -23,8 +23,10 @@ describe('API Error Handling', () => {
     mockNextResponse.json.mockImplementation((data, init) => {
       return {
         json: () => Promise.resolve(data),
-        status: init?.status || 200
-      } as unknown as Response
+        status: init?.status || 200,
+        cookies: {},
+        [Symbol.for('internals')]: {}
+      } as unknown as NextResponse<unknown>
     })
   })
 
