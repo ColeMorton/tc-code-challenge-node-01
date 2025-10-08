@@ -29,6 +29,125 @@ The system provides two approaches for data operations:
 
 Server Actions are the recommended approach for most data operations. They provide type safety, automatic cache invalidation, and seamless integration with React forms.
 
+## Modern Hook Integration
+
+The system now uses custom hooks to simplify data operations and provide consistent patterns across components.
+
+### Using useBillForm Hook
+
+The `useBillForm` hook centralizes all form state and validation logic, making form handling much simpler:
+
+```typescript
+import { useBillForm } from '@/app/hooks/useBillForm'
+
+export default function BillForm({ users }: BillFormProps) {
+  const {
+    formData,
+    validation,
+    asyncValidation,
+    error,
+    success,
+    isPending,
+    handleBillReferenceChange,
+    handleBillDateChange,
+    handleAssignedToChange,
+    handleSubmit
+  } = useBillForm()
+
+  // Component focuses purely on UI rendering
+  return (
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
+      
+      <div>
+        <label htmlFor="billReference">Bill Reference *</label>
+        <input
+          id="billReference"
+          value={formData.billReference}
+          onChange={(e) => handleBillReferenceChange(e.target.value)}
+          className={hasFieldError(validation, 'billReference') ? 'border-red-300' : 'border-gray-300'}
+        />
+        {getFieldError(validation, 'billReference') && (
+          <p className="text-red-600">{getFieldError(validation, 'billReference')}</p>
+        )}
+      </div>
+      
+      {/* Additional form fields */}
+      
+      <button type="submit" disabled={isPending}>
+        {isPending ? 'Creating...' : 'Create Bill'}
+      </button>
+    </form>
+  )
+}
+```
+
+### Using useErrorHandler Hook
+
+Centralized error handling across components:
+
+```typescript
+import { useErrorHandler } from '@/app/hooks/useErrorHandler'
+
+export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
+  const { error, showError, clearError } = useErrorHandler()
+  
+  const assignBill = useCallback(async (billId: string, userId: string) => {
+    clearError() // Clear any existing errors
+    
+    try {
+      const result = await assignBillAction({ billId, userId })
+      
+      if (!result.success) {
+        showError(result.error || 'Failed to assign bill')
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to assign bill')
+    }
+  }, [showError, clearError])
+  
+  return (
+    <div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
+      {/* Dashboard content */}
+    </div>
+  )
+}
+```
+
+### Hook Composition Patterns
+
+Combine hooks for complex functionality:
+
+```typescript
+export default function AdvancedForm() {
+  const { error, showError, clearError } = useErrorHandler()
+  const { formData, handleSubmit, isPending } = useBillForm()
+  
+  const handleAdvancedAction = async () => {
+    clearError()
+    try {
+      await handleSubmit(new Event('submit') as React.FormEvent)
+      // Additional post-submission logic
+    } catch (err) {
+      showError('Advanced action failed')
+    }
+  }
+  
+  return (
+    // Component JSX
+  )
+}
+```
+
 ### Creating Bills
 
 #### Basic Bill Creation

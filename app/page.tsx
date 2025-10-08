@@ -1,4 +1,4 @@
-export default function Home() {
+export default function Home(): React.JSX.Element {
   return (
     <div className="min-h-screen relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900"></div>

@@ -4,7 +4,7 @@ import {
   fetchTotalNumberOnHoldBills
 } from '@/app/lib/domain/bills';
 
-export default async function CardWrapper() {
+export default async function CardWrapper(): Promise<React.JSX.Element> {
   const [
     totalSubmittedBills,
     totalApprovedBills,

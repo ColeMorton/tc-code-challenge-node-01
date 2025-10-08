@@ -4,7 +4,7 @@ import { getBills, getUsers } from '@/app/lib/domain/bills'
 import BillsDashboard from '@/app/ui/bills/dashboard'
 import { BillsDashboardSkeleton } from '@/app/ui/skeletons'
 
-async function BillsDashboardWrapper() {
+async function BillsDashboardWrapper(): Promise<React.JSX.Element> {
   const [bills, users] = await Promise.all([
     getBills(),
     getUsers()
@@ -13,7 +13,7 @@ async function BillsDashboardWrapper() {
   return <BillsDashboard bills={bills} users={users} />
 }
 
-export default function BillsPage() {
+export default function BillsPage(): React.JSX.Element {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">

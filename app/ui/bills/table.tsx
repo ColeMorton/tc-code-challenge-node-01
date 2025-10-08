@@ -1,6 +1,6 @@
 import { fetchUserBillsSummary } from '@/app/lib/domain/bills';
 
-export default async function BillsTable() {
+export default async function BillsTable(): Promise<React.JSX.Element> {
   const userSummary = await fetchUserBillsSummary();
 
   return (

@@ -3,7 +3,7 @@ import { prisma } from '@/app/lib/infrastructure'
 import BillForm from '@/app/ui/bills/form'
 import { BillFormSkeleton } from '@/app/ui/skeletons'
 
-async function BillFormWrapper() {
+async function BillFormWrapper(): Promise<React.JSX.Element> {
   const users = await prisma.user.findMany({
     include: {
       _count: {
@@ -18,7 +18,7 @@ async function BillFormWrapper() {
   return <BillForm users={users} />
 }
 
-export default function NewBillPage() {
+export default function NewBillPage(): React.JSX.Element {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">

@@ -1,200 +1,25 @@
 'use client'
 
-import { useState, useTransition, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createBill, validateBillReference } from '@/app/bills/actions'
-import {
-  FormValidationState,
-  initialValidationState,
-  validateForm,
-  getFieldError,
-  hasFieldError,
-  FieldValidators,
-  BillFormData
-} from '@/app/lib/validation'
-import {
-  AsyncValidationState,
-  BillFormProps
-} from '@/app/lib/types'
-import { sanitizeBillReference } from '@/app/lib/security'
+import { getFieldError, hasFieldError } from '@/app/lib/validation'
+import { BillFormProps } from '@/app/lib/types'
+import { useBillForm } from '@/app/hooks/useBillForm'
 
 export default function BillForm({ users }: BillFormProps) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [formData, setFormData] = useState<BillFormData>({
-    billReference: '',
-    billDate: '',
-    assignedToId: ''
-  })
-  const [validation, setValidation] = useState<FormValidationState>(initialValidationState)
-  const [asyncValidation, setAsyncValidation] = useState<AsyncValidationState>({
-    billReference: {
-      isValid: true,
-      isChecking: false,
-      message: ''
-    }
-  })
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const {
+    formData,
+    validation,
+    asyncValidation,
+    error,
+    success,
+    isPending,
+    handleBillReferenceChange,
+    handleBillDateChange,
+    handleAssignedToChange,
+    handleSubmit
+  } = useBillForm()
 
-  const handleValidateBillReference = async (billReference: string) => {
-    if (!billReference.trim()) {
-      setAsyncValidation({
-        billReference: {
-          isValid: true,
-          isChecking: false,
-          message: ''
-        }
-      })
-      return
-    }
-
-    setAsyncValidation({
-      billReference: {
-        isValid: true,
-        isChecking: true,
-        message: 'Checking...'
-      }
-    })
-
-    try {
-      const result = await validateBillReference(billReference)
-
-      setAsyncValidation({
-        billReference: {
-          isValid: result.isValid,
-          isChecking: false,
-          message: result.message || ''
-        }
-      })
-    } catch {
-      setAsyncValidation({
-        billReference: {
-          isValid: false,
-          isChecking: false,
-          message: 'Error checking bill reference'
-        }
-      })
-    }
-  }
-
-  const handleBillReferenceChange = (value: string) => {
-    const sanitized = sanitizeBillReference(value)
-    const newFormData = { ...formData, billReference: sanitized }
-    setFormData(newFormData)
-
-    // Validate field immediately with Zod
-    const fieldError = FieldValidators.billReference(sanitized)
-    setValidation(prev => ({
-      ...prev,
-      billReference: fieldError,
-      isValid: fieldError === null && prev.billDate === null && prev.assignedToId === null
-    }))
-
-    // Clear existing timeout
-    if (validationTimeoutRef.current) {
-      clearTimeout(validationTimeoutRef.current)
-    }
-
-    // Only validate asynchronously if the value is not empty and passes basic validation
-    if (sanitized.trim() && !fieldError) {
-      // Set new timeout for async validation
-      validationTimeoutRef.current = setTimeout(() => {
-        handleValidateBillReference(sanitized)
-      }, 500)
-    } else {
-      // Reset async validation state for empty or invalid values
-      setAsyncValidation({
-        billReference: {
-          isValid: true,
-          isChecking: false,
-          message: ''
-        }
-      })
-    }
-  }
-
-  const handleBillDateChange = (value: string) => {
-    const newFormData = { ...formData, billDate: value }
-    setFormData(newFormData)
-
-    // Validate field immediately with Zod
-    const fieldError = FieldValidators.billDate(value)
-    setValidation(prev => ({
-      ...prev,
-      billDate: fieldError,
-      isValid: prev.billReference === null && fieldError === null && prev.assignedToId === null
-    }))
-  }
-
-  const handleAssignedToChange = (value: string) => {
-    const newFormData = { ...formData, assignedToId: value }
-    setFormData(newFormData)
-
-    // Validate field immediately with Zod (optional field)
-    const fieldError = FieldValidators.assignedToId()
-    setValidation(prev => ({
-      ...prev,
-      assignedToId: fieldError,
-      isValid: prev.billReference === null && prev.billDate === null && fieldError === null
-    }))
-  }
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (validationTimeoutRef.current) {
-        clearTimeout(validationTimeoutRef.current)
-      }
-    }
-  }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    // Validate the entire form
-    const formValidation = validateForm(formData)
-    setValidation(formValidation)
-
-    // Check if there are any validation errors
-    if (!formValidation.isValid) {
-      const firstError = Object.values(formValidation).find(error => error && typeof error === 'object' && 'message' in error)
-      setError(firstError ? firstError.message : 'Please fix the form errors')
-      return
-    }
-
-    // Check async validation for bill reference
-    if (!asyncValidation.billReference.isValid) {
-      setError('Please fix the bill reference error')
-      return
-    }
-
-    // Check if async validation is still in progress
-    if (asyncValidation.billReference.isChecking) {
-      setError('Please wait for bill reference validation to complete')
-      return
-    }
-
-    startTransition(async () => {
-      try {
-        await createBill({
-          billReference: formData.billReference,
-          billDate: formData.billDate,
-          assignedToId: formData.assignedToId || undefined
-        })
-
-        setSuccess(true)
-        setTimeout(() => {
-          router.push('/bills')
-        }, 2000)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      }
-    })
-  }
+  // All form logic is now handled by the custom hook
 
   if (success) {
     return (

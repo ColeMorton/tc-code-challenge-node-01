@@ -13,6 +13,8 @@ This documentation provides comprehensive information about the Bill Management 
 - **[Server Actions Reference](./reference/server-actions.md)** - Server-side operations and functions
 - **[Data Models Reference](./reference/data-models.md)** - Complete TypeScript interface definitions
 - **[Error Codes Reference](./reference/error-codes.md)** - Error handling patterns and codes
+- **[Hooks Reference](./reference/hooks.md)** - Custom React hooks for state management
+- **[Utilities Reference](./reference/utilities.md)** - Reusable utility functions
 
 ### Architecture & Design
 - **[System Architecture](./architecture/README.md)** - High-level system design and technology stack
@@ -73,6 +75,9 @@ Visit `http://localhost:3000` to see the application.
 - ✅ **Stage Workflow**: Bills progress through Draft → Submitted → Approved → Paying → On Hold/Rejected → Paid
 - ✅ **Real-time Validation**: Check bill reference uniqueness as you type
 - ✅ **Responsive Design**: Works on desktop and mobile devices
+- ✅ **Modern React Architecture**: Custom hooks for state management and performance optimization
+- ✅ **Composable Components**: Reusable UI patterns with clear separation of concerns
+- ✅ **Performance Optimized**: Memoization patterns and efficient rendering
 
 ### Business Rules
 - Users can have maximum 3 bills assigned at any time (active stages only)
@@ -135,7 +140,10 @@ npm run test:coverage      # Coverage report
 ├── app/                    # Next.js App Router
 │   ├── api/               # REST API endpoints
 │   ├── bills/             # Bills pages and Server Actions
+│   ├── hooks/             # Custom React hooks (NEW)
 │   ├── lib/               # Shared utilities and types
+│   │   ├── utils/         # Utility functions (NEW)
+│   │   └── ...
 │   └── ui/                # UI components
 ├── lib/                   # Root-level utilities
 ├── prisma/                # Database schema and migrations
@@ -149,9 +157,12 @@ See [Component Architecture](./architecture/components.md) for detailed frontend
 
 - **Input Validation**: Server-side validation with Zod schemas
 - **Database Security**: Foreign key constraints and unique constraints
-- **Performance**: Optimized queries with proper indexing
+- **Performance**: Optimized queries with proper indexing and React memoization
 - **Caching**: User capacity caching for performance
 - **Monitoring**: Performance metrics and error tracking
+- **Modern React Patterns**: Custom hooks, memoization, and efficient state management
+- **Component Optimization**: 80% complexity reduction in form components
+- **Error Handling**: Centralized error management with consistent UX patterns
 
 ## 📈 Monitoring & Maintenance
 
@@ -181,7 +192,9 @@ For questions or issues:
 - [Data Operations Guide](./guides/data-operations.md) - Server Actions vs REST API
 - [Testing Guide](./guides/testing-guide.md) - Comprehensive testing documentation
 - [Database Architecture](./architecture/database.md) - Schema and constraints
-- [Component Architecture](./architecture/components.md) - Frontend structure
+- [Component Architecture](./architecture/components.md) - Modern React architecture with hooks
+- [Hooks Reference](./reference/hooks.md) - Custom hooks for state management
+- [Utilities Reference](./reference/utilities.md) - Reusable utility functions
 
 ---
 

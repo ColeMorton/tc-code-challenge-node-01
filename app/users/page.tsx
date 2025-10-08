@@ -6,7 +6,7 @@ import {
 import CardWrapper from '@/app/ui/dashboard/cards';
 import BillsTable from '@/app/ui/bills/table';
 
-export default async function Page() {
+export default async function Page(): Promise<React.JSX.Element> {
   return (
     <main>
       <h1 className='mb-4 text-xl md:text-2xl text-center'>

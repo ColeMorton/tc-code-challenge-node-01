@@ -1,16 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { assignBillAction } from '@/app/bills/actions'
 import {
-  Bill,
-  BillsDashboardProps,
-  GroupedBills
+  BillsDashboardProps
 } from '@/app/lib/types'
 import { getStageConfig, STAGE_ORDER, isStageAssignable } from '@/app/lib/domain/bills'
+import { formatDate } from '@/app/lib/utils/date'
+import { groupBillsByStage } from '@/app/lib/utils/bills'
+import { useErrorHandler } from '@/app/hooks/useErrorHandler'
 
 export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
-  const [error, setError] = useState<string | null>(null)
+  const { error, showError, clearError } = useErrorHandler()
   const [assigningBillId, setAssigningBillId] = useState<string | null>(null)
 
   // Scroll to top when any error occurs
@@ -20,45 +21,26 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
     }
   }, [error])
 
-  const groupBillsByStage = (bills: Bill[]): GroupedBills => {
-    return bills.reduce((acc, bill) => {
-      const stage = bill.billStage.label
-      if (!acc[stage]) {
-        acc[stage] = []
-      }
-      acc[stage].push(bill)
-      return acc
-    }, {} as GroupedBills)
-  }
+  const groupedBills = useMemo(() => groupBillsByStage(bills), [bills])
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
-  const assignBill = async (billId: string, userId: string) => {
+  const assignBill = useCallback(async (billId: string, userId: string): Promise<void> => {
     setAssigningBillId(billId)
-    setError(null)
+    clearError()
 
     try {
       const result = await assignBillAction({ billId, userId })
 
       if (!result.success) {
-        setError(result.error || 'Failed to assign bill')
-        setTimeout(() => setError(null), 5000)
+        showError(result.error || 'Failed to assign bill')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign bill')
-      setTimeout(() => setError(null), 5000)
+      showError(err instanceof Error ? err.message : 'Failed to assign bill')
     } finally {
       setAssigningBillId(null)
     }
-  }
+  }, [showError, clearError])
 
-  const groupedBills = groupBillsByStage(bills)
+  // groupedBills is now memoized above
   const stageOrder = STAGE_ORDER
 
   return (
@@ -163,7 +145,7 @@ export default function BillsDashboard({ bills, users }: BillsDashboardProps) {
                               id={`assignment-${bill.id}`}
                               data-testid={`assignment-select-${bill.billReference}`}
                               className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              onChange={(e) => {
+                              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                                 if (e.target.value) {
                                   assignBill(bill.id, e.target.value)
                                   e.target.value = ''
