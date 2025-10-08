@@ -1,8 +1,8 @@
 # API Reference
 
-[← Back to Documentation](../README.md) | [Server Actions Reference](../reference/server-actions.md) | [Data Models Reference](../reference/data-models.md)
+[← Back to Documentation](../README.md) | [Data Models](data-models.md) | [Server Actions](server-actions.md)
 
-This document provides comprehensive documentation for all REST API endpoints in the Trilogy Care Bill Management System. For data mutations and form operations, see [Server Actions Reference](../reference/server-actions.md).
+This document provides comprehensive documentation for all REST API endpoints in the Bill Management System. For data mutations and form operations, see [Server Actions Reference](server-actions.md).
 
 ## Base URL
 
@@ -16,12 +16,12 @@ Currently, no authentication is required for any endpoints.
 
 ## Data Models
 
-See [Data Models Reference](../reference/data-models.md) for complete TypeScript interface definitions.
+See [Data Models Reference](data-models.md) for complete TypeScript interface definitions.
 
 ### Quick Reference
 
 - **User**: `{ id, name, email, createdAt, updatedAt }`
-- **BillStage**: `{ id, label, createdAt, updatedAt }` (Note: `colour` field exists only in UI components)
+- **BillStage**: `{ id, label, createdAt, updatedAt }`
 - **Bill**: `{ id, billReference, billDate, submittedAt?, approvedAt?, onHoldAt?, billStageId, assignedToId?, createdAt, updatedAt, assignedTo?, billStage }`
 
 ## Endpoints
@@ -93,8 +93,7 @@ Bill[]
     },
     "billStage": {
       "id": "clx1111111111",
-      "label": "Submitted",
-      "colour": "#3B82F6"
+      "label": "Submitted"
     }
   }
 ]
@@ -156,8 +155,7 @@ POST /api/bills/assign
     },
     "billStage": {
       "id": "clx1111111111",
-      "label": "Submitted",
-      "colour": "#3B82F6"
+      "label": "Submitted"
     }
   }
 }
@@ -250,15 +248,10 @@ All endpoints return errors in the following format:
 
 Common HTTP status codes:
 - `200 OK`: Request successful
-- `201 Created`: Resource created successfully
 - `400 Bad Request`: Invalid request data
 - `404 Not Found`: Resource not found
-- `409 Conflict`: Resource conflict (e.g., duplicate bill reference)
+- `409 Conflict`: Resource conflict (e.g., user bill limit exceeded)
 - `500 Internal Server Error`: Server or database error
-
-## Rate Limiting
-
-Currently, no rate limiting is implemented.
 
 ## Data Validation
 
@@ -276,6 +269,10 @@ Currently, no rate limiting is implemented.
 - Maximum 3 bills per user at any given time
 - Limit applies to all bill stages
 - No limit on total bills a user can process over time
+
+## Rate Limiting
+
+Currently, no rate limiting is implemented.
 
 ## Usage Guidelines
 
@@ -297,10 +294,55 @@ Currently, no rate limiting is implemented.
 
 See [Data Operations Guide](../guides/data-operations.md) for detailed guidance on choosing the right approach.
 
+### Integration Examples
+
+#### JavaScript/TypeScript
+```typescript
+// Fetch bills
+const fetchBills = async () => {
+  const response = await fetch('/api/bills')
+  if (!response.ok) throw new Error('Failed to fetch bills')
+  return response.json()
+}
+
+// Assign bill
+const assignBill = async (userId: string, billId: string) => {
+  const response = await fetch('/api/bills/assign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, billId })
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error)
+  }
+  
+  return response.json()
+}
+```
+
+#### cURL Examples
+```bash
+# Get all bills
+curl -X GET http://localhost:3000/api/bills
+
+# Get all users
+curl -X GET http://localhost:3000/api/users
+
+# Assign bill
+curl -X POST http://localhost:3000/api/bills/assign \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "clx1234567890", "billId": "clx0987654321"}'
+
+# Health check
+curl -X GET http://localhost:3000/api/health
+```
+
 ## Related Documentation
 
-- [Data Models Reference](../reference/data-models.md) - Complete type definitions
-- [Server Actions Reference](../reference/server-actions.md) - Server-side operations
-- [Error Codes Reference](../reference/error-codes.md) - Error handling patterns
+- [Data Models Reference](data-models.md) - Complete type definitions
+- [Server Actions Reference](server-actions.md) - Server-side operations
+- [Error Codes Reference](error-codes.md) - Error handling patterns
 - [Data Operations Guide](../guides/data-operations.md) - When to use REST vs Server Actions
 - [Database Architecture](../architecture/database.md) - Schema and constraints

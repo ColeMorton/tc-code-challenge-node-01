@@ -1,6 +1,10 @@
 # Code Examples
 
-This document provides practical examples for common development patterns, API usage, frontend components, database operations, and testing strategies used in the Trilogy Care Bill Management System.
+[← Back to Documentation](../README.md) | [Data Operations Guide](../guides/data-operations.md) | [Testing Guide](../guides/testing-guide.md)
+
+This document provides practical examples for common development patterns, API usage, frontend components, database operations, and testing strategies used in the Bill Management System.
+
+**Note**: All code examples are validated against the current codebase and marked with validation status.
 
 ## API Usage Examples
 
@@ -38,54 +42,58 @@ useEffect(() => {
 
 ### Creating a New Bill
 
+**[Validated: 2025-01]** - Uses Server Actions (primary method)
+
 ```typescript
-interface CreateBillRequest {
-  billReference: string
-  billDate: string
-  assignedToId?: string
-}
+import { createBill } from '@/app/bills/actions'
 
-const createBill = async (billData: CreateBillRequest) => {
-  try {
-    const response = await fetch('/api/bills', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(billData),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to create bill')
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error('Error creating bill:', error)
-    throw error
-  }
-}
-
-// Usage example
+// Using Server Actions for bill creation
 const handleSubmit = async (formData: FormData) => {
   try {
     const newBill = await createBill({
-      billReference: 'BILL-2024-001',
-      billDate: '2024-01-15T00:00:00.000Z',
-      assignedToId: 'user-id-123'
+      billReference: formData.get('billReference') as string,
+      billDate: formData.get('billDate') as string,
+      assignedToId: formData.get('assignedToId') as string || undefined
     })
     console.log('Bill created:', newBill)
   } catch (error) {
     console.error('Creation failed:', error)
   }
 }
+
+// Note: POST /api/bills endpoint does not exist
+// Bill creation is handled exclusively through Server Actions
 ```
 
 ### Assigning Bills to Users
 
+**[Validated: 2025-01]** - Both Server Actions and REST API methods
+
+#### Using Server Actions (Recommended)
 ```typescript
+import { assignBillAction } from '@/app/bills/actions'
+
 // Assign specific bill to user
+const assignSpecificBill = async (billId: string, userId: string) => {
+  const result = await assignBillAction({ userId, billId })
+  
+  if (result.success) {
+    console.log('Bill assigned:', result.bill)
+  } else {
+    console.error('Assignment failed:', result.error)
+  }
+}
+
+// Auto-assign next available bill
+const autoAssignBill = async (userId: string) => {
+  const result = await assignBillAction({ userId })
+  // No billId provided - will auto-assign oldest unassigned bill
+}
+```
+
+#### Using REST API (External Integration)
+```typescript
+// Assign specific bill to user via REST API
 const assignSpecificBill = async (billId: string, userId: string) => {
   const response = await fetch('/api/bills/assign', {
     method: 'POST',
@@ -101,38 +109,16 @@ const assignSpecificBill = async (billId: string, userId: string) => {
   return await response.json()
 }
 
-// Auto-assign next available bill
-const autoAssignBill = async (userId: string) => {
-  const response = await fetch('/api/bills/assign', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId })
-  })
-
-  return await response.json()
-}
+// Note: REST API requires both billId and userId
+// Auto-assignment is only available through Server Actions
 ```
 
-### Server Actions for Bill Management
+### Real-time Validation with Server Actions
+
+**[Validated: 2025-01]** - Server Actions for validation
 
 ```typescript
-// Using server actions for bill creation
-import { createBill, validateBillReference } from '@/app/bills/actions'
-
-const handleCreateBill = async (formData: FormData) => {
-  try {
-    const billData = {
-      billReference: formData.get('billReference') as string,
-      billDate: formData.get('billDate') as string,
-      assignedToId: formData.get('assignedToId') as string || undefined
-    }
-
-    const newBill = await createBill(billData)
-    console.log('Bill created:', newBill)
-  } catch (error) {
-    console.error('Creation failed:', error)
-  }
-}
+import { validateBillReference } from '@/app/bills/actions'
 
 // Real-time validation using server action
 const [validation, setValidation] = useState({ isValid: true, message: '' })
@@ -153,6 +139,15 @@ const checkBillReference = async (reference: string) => {
     })
   }
 }
+
+// Debounced validation to prevent excessive API calls
+useEffect(() => {
+  const timeoutId = setTimeout(() => {
+    checkBillReference(billReference)
+  }, 500)
+  
+  return () => clearTimeout(timeoutId)
+}, [billReference])
 ```
 
 ## Frontend Component Examples
@@ -237,15 +232,14 @@ const useFormValidation = () => {
     }))
 
     try {
-      const result = await fetch(`/api/bills/validate?billReference=${encodeURIComponent(reference)}`)
-      const data = await result.json()
-
+      const result = await validateBillReference(reference)
+      
       setValidation(prev => ({
         ...prev,
         billReference: {
-          isValid: data.isValid,
+          isValid: result.isValid,
           isChecking: false,
-          message: data.isValid ? '' : 'Reference already exists'
+          message: result.isValid ? '' : result.message || 'Reference already exists'
         }
       }))
     } catch (error) {

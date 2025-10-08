@@ -1,14 +1,16 @@
 # System Architecture
 
-This document provides a comprehensive overview of the Trilogy Care Bill Management System architecture, including technology stack, database design, and component organization.
+[← Back to Documentation](../README.md) | [Database Architecture](database.md) | [Component Architecture](components.md)
+
+This document provides a high-level overview of the Bill Management System architecture, including technology stack and system design. For detailed implementation information, see the linked architecture documents.
 
 ## Technology Stack
 
 ### Frontend
 - **Next.js 15.5.2**: React framework with App Router for modern web development
 - **React 19.1.0**: Component-based UI library with hooks and context
-- **TypeScript 5**: Static typing for improved developer experience and code quality
-- **Tailwind CSS v4**: Utility-first CSS framework for rapid UI development
+- **TypeScript ^5**: Static typing for improved developer experience and code quality
+- **Tailwind CSS ^4**: Utility-first CSS framework for rapid UI development
 - **@tailwindcss/postcss**: PostCSS integration for Tailwind CSS
 
 ### Backend
@@ -16,6 +18,8 @@ This document provides a comprehensive overview of the Trilogy Care Bill Managem
 - **Prisma ORM 6.16.2**: Type-safe database client and schema management
 - **SQLite**: Lightweight, file-based database for development and testing
 - **Server Actions**: Server-side business logic with `'use server'` directives
+
+See [Database Architecture](database.md) for detailed schema and constraint information.
 
 ### Development & Testing
 - **Jest 30.1.3**: JavaScript testing framework with multi-project configuration
@@ -29,22 +33,21 @@ This document provides a comprehensive overview of the Trilogy Care Bill Managem
 
 ```
 ├── app/                          # Next.js App Router
-│   ├── api/                     # API route handlers
+│   ├── api/                     # REST API route handlers
 │   │   ├── bills/              # Bill-related endpoints
 │   │   │   ├── route.ts       # GET /api/bills
 │   │   │   └── assign/        # POST /api/bills/assign
 │   │   ├── users/             # GET /api/users
 │   │   └── health/            # GET /api/health
-│   ├── bills/                  # Bills pages and actions
+│   ├── bills/                  # Bills pages and Server Actions
 │   │   ├── page.tsx           # Bills dashboard
 │   │   ├── new/               # New bill form
-│   │   └── actions.ts         # Server actions
-│   ├── lib/                    # Shared utilities
-│   │   ├── prisma.ts          # Prisma client singleton
-│   │   ├── data.ts            # Data access functions
-│   │   ├── validation.ts      # Input validation
-│   │   ├── error-constants.ts # Error definitions
-│   │   └── definitions.ts     # Type definitions
+│   │   └── actions.ts         # Server Actions
+│   ├── lib/                    # Shared utilities and types
+│   │   ├── infrastructure/    # Prisma client and database
+│   │   ├── validation/        # Input validation
+│   │   ├── error/             # Error definitions
+│   │   └── types/             # TypeScript definitions
 │   ├── ui/                     # UI components
 │   │   ├── bills/             # Bill-specific components
 │   │   ├── dashboard/         # Dashboard components
@@ -66,216 +69,122 @@ This document provides a comprehensive overview of the Trilogy Care Bill Managem
 │   ├── unit/                  # Frontend component tests
 │   └── e2e/                   # End-to-end tests
 └── docs/                       # Documentation
-    ├── api/                   # API reference
-    ├── architecture/          # System architecture
-    ├── deployment/            # Setup instructions
+    ├── reference/             # Technical specifications
+    ├── guides/                # Tutorials and workflows
+    ├── architecture/          # System design documents
     ├── examples/              # Code examples
-    ├── getting-started/       # Quick start guide
-    └── guides/                # Advanced guides
+    └── deployment/            # Setup instructions
 ```
+
+See [Component Architecture](components.md) for detailed frontend structure and component organization.
 
 ## Database Architecture
 
-### Schema Design
+The system uses SQLite with Prisma ORM and implements a multi-layer defense strategy for business rule enforcement.
 
-The database uses a relational model with three core entities:
+### Core Entities
 
-```mermaid
-erDiagram
-    User ||--o{ Bill : assigns
-    BillStage ||--o{ Bill : categorizes
+- **User**: System users who can be assigned bills
+- **BillStage**: Workflow stages (Draft, Submitted, Approved, Paying, On Hold, Rejected, Paid)
+- **Bill**: Bills with references, dates, and stage assignments
 
-    User {
-        string id PK
-        string name
-        string email UK
-        datetime createdAt
-        datetime updatedAt
-    }
+### Key Features
 
-    BillStage {
-        string id PK
-        string label UK
-        string colour
-        datetime createdAt
-        datetime updatedAt
-    }
+- **3-Bill Assignment Limit**: Users can have maximum 3 bills assigned (active stages only)
+- **Database Constraints**: SQLite triggers enforce business rules at database level
+- **Performance Optimization**: Indexed queries and database views for efficiency
+- **Data Integrity**: Foreign key constraints and unique constraints
 
-    Bill {
-        string id PK
-        string billReference UK
-        datetime billDate
-        datetime submittedAt
-        datetime approvedAt
-        datetime onHoldAt
-        string billStageId FK
-        string assignedToId FK
-        datetime createdAt
-        datetime updatedAt
-    }
-```
-
-### Entity Relationships
-
-**User → Bill (One-to-Many)**
-- A user can be assigned multiple bills
-- Bills can be unassigned (assignedToId = null)
-- Business rule: Maximum 3 bills per user
-
-**BillStage → Bill (One-to-Many)**
-- Each bill belongs to exactly one stage
-- Stages define workflow progression
-- 7 predefined stages: Draft, Submitted, Approved, Paying, On Hold, Rejected, Paid
-
-### Data Constraints
-
-- **Unique Constraints**: User email, Bill reference
-- **Foreign Keys**: Bill.assignedToId → User.id, Bill.billStageId → BillStage.id
-- **Business Rules**: 3-bill assignment limit, stage-based assignment restrictions
+See [Database Architecture](database.md) for comprehensive schema, constraints, and performance details.
 
 ## Frontend Architecture
 
-### Component Structure
+The frontend follows Next.js 15 App Router patterns with clear separation of concerns and component composition principles.
 
-**Page Components**
-- `app/page.tsx`: Homepage with navigation
-- `app/bills/page.tsx`: Bills dashboard with Kanban view
-- `app/bills/new/page.tsx`: Bill creation form
+### Key Features
 
-**Layout System**
-- `app/layout.tsx`: Root layout with fonts and global styles
-- Responsive design using Tailwind CSS grid system
-- Mobile-first responsive breakpoints
+- **Server/Client Component Split**: Server components for data fetching, client components for interactivity
+- **Server Actions Integration**: Type-safe server-side operations with automatic revalidation
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+- **Accessibility**: Comprehensive ARIA support and keyboard navigation
+- **Performance**: Parallel data fetching, debounced validation, and optimistic updates
 
-### State Management
+### Component Organization
 
-**Client-Side State**
-- React hooks (useState, useEffect) for component state
-- No global state management (Redux/Zustand) - kept simple
-- Server state synchronized via API calls
+- **Page Components**: Server-side data fetching and orchestration
+- **UI Components**: Reusable, focused components with clear responsibilities
+- **Layout System**: Consistent responsive design patterns
+- **State Management**: Local state with React hooks, no global state management
 
-**Data Flow**
-1. Components fetch data from API endpoints
-2. Local state updates trigger re-renders
-3. User actions call API endpoints
-4. Optimistic updates for better UX
-
-### UI Patterns
-
-**Design System**
-- Consistent color palette with semantic colors
-- Tailwind utility classes for spacing and typography
-- Component composition over inheritance
-- Accessibility considerations with semantic HTML
+See [Component Architecture](components.md) for detailed component structure, patterns, and implementation details.
 
 ## Backend Architecture
 
+The backend combines REST API endpoints with Server Actions for a hybrid approach that provides both external integration capabilities and type-safe internal operations.
+
 ### API Design
 
-**RESTful Endpoints**
-- Resource-based URLs (`/api/users`, `/api/bills`)
+**REST API Endpoints**
+- Resource-based URLs (`/api/users`, `/api/bills`, `/api/health`)
 - Standard HTTP methods (GET, POST)
 - JSON request/response format
-- Consistent error handling
+- Consistent error handling with HTTP status codes
 
-**Business Logic Layer**
-- Validation in API route handlers
-- Database operations through Prisma ORM
-- Error handling with appropriate HTTP status codes
+**Server Actions**
+- Type-safe server-side functions
+- Automatic cache invalidation and UI updates
+- Form integration and optimistic updates
+- Business logic enforcement with validation
 
-### Database Layer
+### Data Layer
 
 **Prisma ORM Integration**
-- Type-safe database queries
-- Automatic migration generation
+- Type-safe database queries and migrations
 - Connection pooling and optimization
 - Development/production environment handling
-
-**Singleton Pattern**
-```typescript
-// lib/prisma.ts - Prevents connection leaks
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
-```
+- Singleton pattern prevents connection leaks
 
 ## Security Considerations
 
-### Data Validation
-- Input validation on all API endpoints
-- TypeScript type checking for compile-time safety
-- Prisma schema validation for runtime safety
-
-### Database Security
-- Foreign key constraints prevent orphaned records
-- Unique constraints prevent duplicate data
-- No direct SQL injection vectors (ORM-based queries)
-
-### Authentication & Authorization
-- Currently no authentication implemented (development/demo purposes)
-- Ready for authentication middleware integration
-- API endpoints designed for role-based access control
+- **Input Validation**: Server-side validation with Zod schemas and TypeScript type checking
+- **Database Security**: Foreign key constraints, unique constraints, and ORM-based queries prevent injection
+- **Authentication**: Currently no authentication (development/demo), ready for middleware integration
+- **Error Handling**: Centralized error definitions without sensitive data exposure
 
 ## Performance Considerations
 
-### Database Optimization
-- Indexed fields for faster queries (id, email, billReference)
-- Efficient joins using Prisma includes
-- Connection pooling for concurrent requests
-
-### Frontend Optimization
-- Next.js automatic code splitting
-- Static asset optimization
-- Component-level loading states
-- Turbopack for faster development builds
-
-### Caching Strategy
-- Browser caching for static assets
-- No server-side caching implemented (suitable for current scale)
-- API responses designed for client-side caching
+- **Database Optimization**: Indexed fields, efficient Prisma queries, and connection pooling
+- **Frontend Optimization**: Next.js code splitting, static asset optimization, and Turbopack
+- **Caching Strategy**: Browser caching for static assets, user capacity caching for performance
+- **Loading States**: Component-level loading states and optimistic updates for better UX
 
 ## Scalability Design
 
-### Current Architecture Benefits
-- Stateless API design enables horizontal scaling
-- Database-agnostic ORM (Prisma) supports migration
-- Component-based frontend supports incremental updates
-- Comprehensive testing enables confident refactoring
-
-### Future Scaling Considerations
-- Database migration path (SQLite → PostgreSQL/MySQL)
-- API rate limiting and authentication
-- CDN integration for static assets
-- Microservices decomposition potential
+- **Current Benefits**: Stateless API design, database-agnostic ORM, component-based frontend, comprehensive testing
+- **Future Considerations**: Database migration path (SQLite → PostgreSQL), API rate limiting, CDN integration, microservices potential
 
 ## Development Patterns
 
-### Code Organization
-- Domain-driven folder structure
-- Separation of concerns (UI, API, Database)
-- TypeScript interfaces for type safety
-- Consistent naming conventions
+- **Code Organization**: Domain-driven folder structure with separation of concerns
+- **Error Handling**: Fail-fast approach with consistent error formats and client-side boundaries
+- **Testing Strategy**: Multi-layer approach (unit, integration, e2e) with real database testing
+- **Type Safety**: TypeScript interfaces throughout the application
 
-### Error Handling
-- Fail-fast approach with meaningful exceptions
-- Consistent error response format across APIs
-- Client-side error boundaries for graceful degradation
+## Implementation Status
 
-### Testing Strategy
-- Multi-layer testing approach (unit, integration, e2e)
-- Real database testing for critical business logic
-- Component testing for UI reliability
-- API testing for endpoint validation
+- ✅ **Core Features**: Bill management, user assignment, stage workflow
+- ✅ **Database Constraints**: 3-bill limit enforcement with triggers and application logic
+- ✅ **Server Actions**: Type-safe server-side operations with form integration
+- ✅ **REST API**: External integration endpoints with proper error handling
+- 🚧 **Authentication**: Ready for implementation, not yet implemented
+- 📋 **Performance Monitoring**: Basic monitoring implemented, advanced metrics planned
 
-## Configuration Management
+## Related Documentation
 
-### Environment Configuration
-- Development vs production settings
-- Database URL configuration
-- Build optimization settings (Turbopack)
-
-### Deployment Architecture
-- Static file generation capability
-- API routes as serverless functions
-- Database migration strategy
-- Environment variable management
+- [Database Architecture](database.md) - Detailed schema, constraints, and performance
+- [Component Architecture](components.md) - Frontend structure and patterns
+- [API Reference](../reference/api.md) - REST endpoint specifications
+- [Server Actions Reference](../reference/server-actions.md) - Server-side operations
+- [Data Operations Guide](../guides/data-operations.md) - When to use Server Actions vs REST API
 
 This architecture provides a solid foundation for a bill management system while maintaining simplicity and enabling future growth.

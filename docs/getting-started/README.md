@@ -1,6 +1,8 @@
 # Getting Started
 
-This guide will help you quickly set up and start working with the Trilogy Care Bill Management System. Follow these steps to get the application running on your local machine.
+[← Back to Documentation](../README.md) | [Data Operations Guide](../guides/data-operations.md) | [Testing Guide](../guides/testing-guide.md)
+
+This guide will help you quickly set up and start working with the Bill Management System. Follow these steps to get the application running on your local machine.
 
 ## Quick Start (5 Minutes)
 
@@ -45,11 +47,11 @@ Open your browser to `http://localhost:3000` and you should see:
 
 ### What You're Working With
 
-The **Trilogy Care Bill Management System** is a full-stack web application that helps manage bills through different workflow stages. It's designed as a code challenge to demonstrate modern web development skills.
+The **Bill Management System** is a full-stack web application that helps manage bills through different workflow stages. It demonstrates modern web development skills and patterns.
 
 **Core Features:**
 - **Bill Management**: Create, view, and track bills through workflow stages
-- **User Assignment**: Assign bills to users with a 3-bill limit per user
+- **User Assignment**: Assign bills to users with a 3-bill limit per user (active stages only)
 - **Stage Workflow**: Bills progress through Draft → Submitted → Approved → Paying → On Hold/Rejected → Paid
 - **Real-time Validation**: Check bill reference uniqueness as you type
 - **Responsive Design**: Works on desktop and mobile devices
@@ -79,7 +81,7 @@ The **Trilogy Care Bill Management System** is a full-stack web application that
 3. User optionally assigns to a user
 4. Form submission creates bill in "Draft" stage
 
-**API**: `POST /api/bills`
+**Server Actions**: `createBill()` function
 - Validates required fields and unique reference
 - Creates bill in Draft stage
 - Returns created bill with relationships
@@ -96,11 +98,12 @@ The **Trilogy Care Bill Management System** is a full-stack web application that
 - `GET /api/bills` - Fetch all bills with relationships
 - `POST /api/bills/assign` - Assign bills to users
 - `GET /api/users` - Fetch available users
+- `GET /api/health` - System health check
 
 ### 3. Bill Assignment Logic
 
 **Business Rules:**
-- Users can have maximum 3 bills assigned at any time
+- Users can have maximum 3 bills assigned at any time (active stages only)
 - Only Draft and Submitted stage bills can be assigned
 - Auto-assignment finds oldest unassigned bill in assignable stages
 - Manual assignment allows specific bill selection
@@ -144,6 +147,8 @@ npm run test:e2e           # End-to-end browser tests
 # Watch mode for development
 npm run test:watch
 ```
+
+See [Testing Guide](../guides/testing-guide.md) for comprehensive testing documentation.
 
 ### Code Quality
 
@@ -225,8 +230,8 @@ npx prisma generate      # Update TypeScript types
 ### Frontend (React/Next.js)
 - **Next.js 15.5.2**: App Router for modern routing and server components
 - **React 19.1.0**: Latest React with hooks and concurrent features
-- **TypeScript 5**: Static typing for better development experience
-- **Tailwind CSS v4**: Utility-first styling framework
+- **TypeScript ^5**: Static typing for better development experience
+- **Tailwind CSS ^4**: Utility-first styling framework
 
 ### Backend (Next.js API)
 - **API Routes**: Server-side endpoints using Next.js conventions
@@ -326,5 +331,14 @@ Once you have the application running:
 - Create bill statistics and reporting
 - Add authentication and authorization
 - Implement real-time updates with websockets
+
+## Related Documentation
+
+- [Data Operations Guide](../guides/data-operations.md) - How to work with Server Actions and REST API
+- [Testing Guide](../guides/testing-guide.md) - Comprehensive testing documentation
+- [Database Architecture](../architecture/database.md) - Schema and constraints
+- [Component Architecture](../architecture/components.md) - Frontend structure
+- [API Reference](../reference/api.md) - REST endpoint documentation
+- [Server Actions Reference](../reference/server-actions.md) - Server-side operations
 
 **Happy coding! 🚀**

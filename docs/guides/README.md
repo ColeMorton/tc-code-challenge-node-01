@@ -1,10 +1,12 @@
 # Advanced Guides
 
-This document provides comprehensive guides for advanced development topics, testing strategies, best practices, troubleshooting, and performance optimization for the Trilogy Care Bill Management System.
+[← Back to Documentation](../README.md) | [Testing Guide](testing-guide.md) | [Data Operations Guide](data-operations.md)
+
+This document provides advanced development guides, best practices, and troubleshooting information for the Bill Management System. For testing documentation, see [Testing Guide](testing-guide.md). For database architecture, see [Database Architecture](../architecture/database.md).
 
 ## Testing Strategy
 
-### Overview
+**Note**: Comprehensive testing documentation has been moved to [Testing Guide](testing-guide.md). This section provides a high-level overview.
 
 The project implements a **multi-layer testing approach** designed to provide comprehensive coverage while maintaining fast feedback loops for developers.
 
